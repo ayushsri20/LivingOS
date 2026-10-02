@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Staff Login - Panesar PG{% endblock %}
+
+{% block extra_head %}
+<style>
+  body {
+    background: var(--grad-surface) !important;
+  }
+
+  /* Simple override since login doesn't need global nav usually */
+  .navigation-bar {
+    display: none !important;
+  }
+
+  .container-premium {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 80vh;
+    padding: 1rem !important;
+  }
+
+  .login-box {
+    width: 100%;
+    max-width: 440px;
+    padding: 3rem;
+    animation: fadeIn 0.8s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .login-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .form-label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+  }
+
+  .form-input {
+    width: 100%;
+    padding: 1rem;
+    background: var(--bg-main);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    font-family: inherit;
+    font-size: 1rem;
+    transition: var(--transition-all);
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: #ffffff;
+    box-shadow: 0 0 0 4px var(--primary-light);
+  }
+
+  .error-alert {
+    background: #fee2e2;
+    border: 1px solid rgba(220, 38, 38, 0.2);
+    color: var(--danger);
+    padding: 1rem;
+    border-radius: var(--radius-md);
+    margin-bottom: 1.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  .login-footer {
+    text-align: center;
+    margin-top: 2rem;
+    font-size: 0.875rem;
+  }
+
+  .login-footer a {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 700;
+  }
+
+  @media (max-width: 480px) {
+    .login-box {
+      padding: 2rem 1.5rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card-premium login-box glass-panel">
+  <div class="login-header">
+    <img src="{% static 'rental/images/panesar-logo.png' %}" alt="Logo" style="height: 60px; margin-bottom: 1.5rem;">
+    <h2 class="font-luxury text-luxury" style="font-size: 2rem;">Staff Login</h2>
+    <p style="color: var(--text-muted); font-size: 0.875rem; margin-top: 0.5rem;">Authorized Staff Only</p>
+  </div>
+
+  <form method="POST" action="{% url 'login' %}">
+    {% csrf_token %}
+
+    {% if error %}
+    <div class="error-alert">
+      {{ error }}
+    </div>
+    {% endif %}
+
+    <div class="form-group">
+      <label class="form-label" for="username">Staff Username</label>
+      <input type="text" id="username" name="username" class="form-input" placeholder="e.g. admin_ayush" required>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="password">Security Password</label>
+      <input type="password" id="password" name="password" class="form-input" placeholder="••••••••" required>
+    </div>
+
+    <div
+      style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; font-size: 0.8125rem;">
+      <label style="display: flex; align-items: center; cursor: pointer; color: var(--text-muted);">
+        <input type="checkbox" name="remember_me" value="true"
+          style="margin-right: 0.5rem; accent-color: var(--primary);"> Remember me
+      </label>
+    </div>
+
+    <button type="submit" class="btn-premium btn-premium-primary" style="width: 100%; padding: 1rem;">
+      Authorize Entry
+    </button>
+  </form>
+
+  <div class="login-footer">
+    <a href="{% url 'home' %}">← Return to Portal Home</a>
+  </div>
+</div>
+{% endblock %}
+
+{% block footer %}{% endblock %}

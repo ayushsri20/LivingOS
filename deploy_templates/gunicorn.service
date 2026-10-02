@@ -1,0 +1,15 @@
+[Unit]
+Description=gunicorn for hotel_project
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/srv/hotel_project
+Environment=DJANGO_SETTINGS_MODULE=hotel_project.settings
+Environment=PATH=/srv/hotel_project/.venv/bin:/usr/bin:/bin
+ExecStart=/srv/hotel_project/.venv/bin/gunicorn hotel_project.wsgi:application \
+  --workers 3 --bind unix:/run/hotel_project.sock
+
+[Install]
+WantedBy=multi-user.target

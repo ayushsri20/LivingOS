@@ -1,0 +1,176 @@
+.navigation-bar {
+  align-items: center;
+  border-bottom: 2px solid #16161a;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.brand-logo span {
+  color: #16161a;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: .95rem;
+  font-weight: 900;
+  letter-spacing: .04em;
+}
+
+.rental-primary-nav {
+  align-items: center;
+  display: flex;
+  flex: 1 1 auto;
+  gap: .35rem;
+  justify-content: center;
+}
+
+.rental-primary-nav a {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  color: #16161a;
+  font-size: .8rem;
+  font-weight: 800;
+  padding: .5rem .75rem;
+  text-decoration: none;
+  transition: background-color .18s ease, transform .18s ease;
+}
+
+.rental-primary-nav a:hover,
+.rental-primary-nav a[aria-current='page'] {
+  background: #ffce00;
+  border-color: #16161a;
+  box-shadow: 2px 2px 0 #16161a;
+  transform: translateY(-1px);
+}
+
+.navigation-bar .nav-actions {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.navigation-bar .nav-actions .btn-premium {
+  margin-left: 0 !important;
+  padding: .55rem .8rem;
+}
+
+.rooms-page {
+  color: #16161a;
+  max-width: 1200px;
+}
+
+.rooms-head,
+.building-picker,
+.room-card,
+.room-modal {
+  border: 2px solid #16161a;
+  border-radius: 20px;
+  box-shadow: 4px 4px 0 #16161a;
+}
+
+.rooms-head {
+  background: #fff;
+}
+
+.rooms-head h1 {
+  font-weight: 900;
+}
+
+.building-picker {
+  background: #fff;
+}
+
+.building-picker button {
+  border: 2px solid #16161a;
+  color: #16161a;
+  transition: background-color .16s ease, transform .16s ease;
+}
+
+.building-picker button:hover {
+  transform: translateY(-2px);
+}
+
+.building-picker button[aria-pressed='true'] {
+  background: #2b59ff;
+  border-color: #16161a;
+  color: #fff;
+}
+
+.room-card {
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+
+.room-card:hover {
+  box-shadow: 6px 6px 0 #16161a;
+  transform: translate(-1px, -2px);
+}
+
+.room-link,
+.room-actions .primary {
+  background: #2b59ff;
+  border: 2px solid #16161a;
+  border-radius: 11px;
+  box-shadow: 2px 2px 0 #16161a;
+  color: #fff;
+  transition: transform .16s ease, box-shadow .16s ease;
+}
+
+.room-link:hover,
+.room-actions .primary:hover {
+  box-shadow: 3px 3px 0 #16161a;
+  transform: translate(-1px, -1px);
+}
+
+.room-actions button,
+.modal-close {
+  border: 2px solid #16161a;
+}
+
+.room-modal {
+  padding: 0;
+}
+
+.modal-head {
+  border-bottom: 2px solid #16161a;
+}
+
+.modal-grid > div {
+  border: 1px solid #e5e7eb;
+}
+
+.field input:focus {
+  border-color: #2b59ff;
+  outline: 2px solid #2b59ff;
+  outline-offset: 1px;
+}
+
+@media (max-width: 768px) {
+  .navigation-bar {
+    align-items: stretch;
+  }
+
+  .rental-primary-nav {
+    flex-basis: 100%;
+    justify-content: flex-start;
+    overflow-x: auto;
+    order: 3;
+    padding: .2rem 0 .35rem;
+  }
+
+  .rental-primary-nav a {
+    flex: 0 0 auto;
+  }
+
+  .brand-logo span {
+    font-size: .75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rental-primary-nav a,
+  .building-picker button,
+  .room-card,
+  .room-link,
+  .room-actions .primary {
+    transition: none;
+  }
+}

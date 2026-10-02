@@ -1,0 +1,433 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Tenancy Register - Panesar PG{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* Page Specific Refinements */
+  .filter-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .guest-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .guest-card {
+    position: relative;
+    padding: 1.5rem;
+  }
+
+  .guest-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .guest-avatar {
+    width: 48px;
+    height: 48px;
+    background: var(--primary-light);
+    color: var(--primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 1.125rem;
+  }
+
+  .guest-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    font-size: 0.8125rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .info-label {
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.65rem;
+    letter-spacing: 0.05em;
+  }
+
+  .info-value {
+    font-weight: 700;
+    color: var(--text-main);
+  }
+
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(8px);
+    z-index: 2000;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+  }
+
+  .modal-content {
+    width: 100%;
+    max-width: 800px;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 2.5rem;
+  }
+
+  .input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    background: var(--bg-canvas);
+  }
+
+  .input:focus {
+    border-color: var(--primary);
+    outline: none;
+    box-shadow: 0 0 0 2px var(--primary-light);
+  }
+
+  .form-group {
+    margin-bottom: 1.25rem;
+  }
+
+  .form-group label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+  }
+
+  @media (max-width: 640px) {
+    .modal-content {
+      padding: 1.5rem;
+    }
+
+    .guest-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<header class="card-premium glass-panel" style="margin-bottom: 2.5rem; padding: 2.5rem;">
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <h1 class="font-luxury text-luxury" style="font-size: 2.5rem;">Resident Register</h1>
+      <p style="color: var(--text-muted); font-weight: 500;">Manage student profiles, documentation, and tenancy
+        details.</p>
+    </div>
+    <button onclick="openModal('add')" class="btn-premium btn-premium-primary">+ Register Resident</button>
+  </div>
+</header>
+
+<div class="card-premium filter-container glass-panel">
+  <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+    <select id="buildingFilter" onchange="filterTable()" class="input" style="width: auto;">
+      <option value="all">All Clusters</option>
+      {% for building in buildings %}
+      <option value="{{ building.name }}">{{ building.name }}</option>
+      {% endfor %}
+    </select>
+    <input type="text" id="searchInput" onkeyup="filterTable()" class="input" placeholder="Search by name or UID..."
+      style="min-width: 250px;">
+  </div>
+  <div class="badge-premium badge-success">{{ guests|length }} Active Residents</div>
+</div>
+
+<div class="guest-grid" id="guestGrid">
+  {% for guest in guests %}
+  <div class="card-premium guest-card" data-building="{{ guest.room.building.name }}" data-name="{{ guest.full_name|lower }}"
+    data-uid="{{ guest.id }}">
+    <div class="guest-header">
+      <div class="guest-avatar">{{ guest.first_name.0 }}{{ guest.last_name.0 }}</div>
+      <div>
+        <h3 class="font-luxury" style="font-size: 1.25rem;">{{ guest.full_name }}</h3>
+        <p style="color: var(--text-muted); font-size: 0.75rem;">Resident UID: {{ guest.id }}</p>
+      </div>
+      <span class="badge-premium {% if guest.is_active %}badge-success{% else %}badge-warning{% endif %}"
+        style="margin-left: auto;">
+        {% if guest.is_active %}ACTIVE{% else %}ARCHIVED{% endif %}
+      </span>
+    </div>
+
+    <div class="guest-info-grid">
+      <div>
+        <div class="info-label">Assigned Room</div>
+        <div class="info-value">{% if guest.room %}{{ guest.room.number }} ({{ guest.room.get_room_type_display }}){% else %}—{% endif %}</div>
+      </div>
+      <div>
+        <div class="info-label">Check-in Date</div>
+        <div class="info-value">{{ guest.check_in_date|date:"d M Y"|default:"—" }}</div>
+      </div>
+      <div>
+        <div class="info-label">Phone</div>
+        <div class="info-value">{{ guest.phone|default:"—" }}</div>
+      </div>
+      <div>
+        <div class="info-label">Email</div>
+        <div class="info-value">{{ guest.email|default:"—" }}</div>
+      </div>
+    </div>
+
+    <div style="border-top: 1px solid var(--border-subtle); padding-top: 1rem; display: flex; gap: 0.75rem;">
+      <button onclick="editGuest('{{ guest.id }}')" class="btn-premium btn-premium-secondary"
+        style="flex: 1; font-size: 0.75rem;">Edit Profile</button>
+      <button onclick="checkoutGuest('{{ guest.id }}')" class="btn-premium btn-premium-secondary"
+        style="flex: 1; font-size: 0.75rem; border-color: var(--danger); color: var(--danger);">End Tenancy</button>
+    </div>
+  </div>
+  {% empty %}
+  <div style="grid-column: 1/-1; text-align: center; padding: 5rem;" class="card-premium">
+    <p style="color: var(--text-muted); font-style: italic;">No residents registered in the system.</p>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Guest Modal -->
+<div id="guestModal" class="modal-overlay" onclick="closeModal(event)">
+  <div class="card-premium modal-content glass-panel" onclick="event.stopPropagation()">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+      <h2 id="modalTitle" class="font-luxury text-luxury" style="font-size: 2rem;">Register Resident</h2>
+      <button onclick="document.getElementById('guestModal').style.display='none'"
+        style="background:none; border:none; cursor:pointer; color:var(--text-muted); font-size: 1.5rem;">&times;</button>
+    </div>
+
+    <form id="guestForm" enctype="multipart/form-data">
+      {% csrf_token %}
+      <input type="hidden" id="formGuestId" name="guest_id">
+
+      <h4 class="font-luxury"
+        style="margin-bottom: 1rem; color: var(--primary); font-size: 0.875rem; text-transform: uppercase;">1. Identity
+        Details</h4>
+      <div
+        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+        <div class="form-group">
+          <label>First Name*</label>
+          <input type="text" name="first_name" id="formFirstName" class="input" required>
+        </div>
+        <div class="form-group">
+          <label>Last Name*</label>
+          <input type="text" name="last_name" id="formLastName" class="input" required>
+        </div>
+      </div>
+
+      <div
+        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+        <div class="form-group">
+          <label>Email (Optional)</label>
+          <input type="email" name="email" id="formEmail" class="input" placeholder="Optional">
+        </div>
+        <div class="form-group">
+          <label>Phone Number (Optional)</label>
+          <input type="tel" name="phone" id="formPhone" class="input" placeholder="Optional">
+        </div>
+      </div>
+
+      <h4 class="font-luxury"
+        style="margin-bottom: 1rem; color: var(--primary); font-size: 0.875rem; text-transform: uppercase;">2. Tenancy
+        Settings</h4>
+      <div
+        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+        <div class="form-group">
+          <label>Assign Room</label>
+          <select name="room_id" id="formRoom" class="input">
+            <option value="">No Room Assigned</option>
+
+            <!-- Partially Filled Rooms (1/2) - Priority for roommate pairing -->
+            <optgroup label="🟡 Shared Rooms (1/2 Slots) - Roommate Available">
+              {% for room in available_rooms %}
+              {% if room.current_occupancy == 1 and room.capacity == 2 %}
+              {% with tenants=room.get_active_tenants %}
+              <option value="{{ room.id }}">
+                {{ room.number }} - {{ room.get_room_type_display }} (1/2)
+                {% if tenants %}with {{ tenants.first.full_name }}{% endif %}
+              </option>
+              {% endwith %}
+              {% endif %}
+              {% endfor %}
+            </optgroup>
+
+            <!-- Empty Rooms (0/2 or 0/1) -->
+            <optgroup label="🟢 Empty Rooms - No Current Tenants">
+              {% for room in available_rooms %}
+              {% if room.current_occupancy == 0 %}
+              <option value="{{ room.id }}">
+                {{ room.number }} - {{ room.get_room_type_display }} (0/{{ room.capacity }})
+              </option>
+              {% endif %}
+              {% endfor %}
+            </optgroup>
+
+            <!-- Full Rooms section removed - handled by JavaScript when editing -->
+          </select>
+          <div style="font-size: 0.65rem; color: var(--text-muted); margin-top: 0.25rem;">
+            💡 Partially filled rooms shown first for better roommate pairing
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Occupancy Preference</label>
+          <select name="occupancy_preference" id="formOccupancyPreference" class="input">
+            <option value="double" selected>Double (Shared Room - Default)</option>
+            <option value="single">Single (Private Room)</option>
+          </select>
+          <div style="font-size: 0.65rem; color: var(--text-muted); margin-top: 0.25rem;">
+            💡 Default is double occupancy for cost-sharing
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Check-in Date</label>
+          <input type="date" name="check_in_date" id="formCheckIn" class="input" value="{% now 'Y-m-d' %}">
+        </div>
+        <div class="form-group">
+          <label>Agreed Rent (₹)</label>
+          <input type="number" name="agreed_rent" id="formAgreedRent" class="input" value="7000">
+        </div>
+      </div>
+
+      <h4 class="font-luxury"
+        style="margin-bottom: 1rem; color: var(--primary); font-size: 0.875rem; text-transform: uppercase;">3.
+        Occupation & IDs</h4>
+      <div
+        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+        <div class="form-group">
+          <label>Occupation</label>
+          <select name="occupation" id="formOccupation" class="input" onchange="toggleOccupationFields()">
+            <option value="student">Student</option>
+            <option value="professional">Working Professional</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="form-group" id="collegeField">
+          <label>College/University</label>
+          <input type="text" name="student_college" id="formCollege" class="input">
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+        <button type="submit" id="submitBtn" class="btn-premium btn-premium-primary" style="flex: 2;">Complete
+          Registration</button>
+        <button type="button" onclick="document.getElementById('guestModal').style.display='none'"
+          class="btn-premium btn-premium-secondary" style="flex: 1;">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const csrftoken = '{{ csrf_token }}';
+  const guestsData = [
+    {% for guest in guests %}
+  {
+    id: '{{ guest.id }}',
+      first_name: '{{ guest.first_name|escapejs }}',
+        last_name: '{{ guest.last_name|escapejs }}',
+          email: '{{ guest.email|default:""|escapejs }}',
+            phone: '{{ guest.phone|default:""|escapejs }}',
+              room_id: '{{ guest.room.id|default:"" }}',
+                check_in_date: '{{ guest.check_in_date|date:"Y-m-d"|default:"" }}',
+                  agreed_rent: '{{ guest.room.agreed_rent|default:"7000" }}',
+                    occupation: '{{ guest.occupation|default:"student"|escapejs }}',
+                      student_college: '{{ guest.student_college|default:""|escapejs }}'
+  } {% if not forloop.last %}, {% endif %}
+  {% endfor %}
+  ];
+
+  function filterTable() {
+    const bValue = document.getElementById('buildingFilter').value;
+    const sValue = document.getElementById('searchInput').value.toLowerCase();
+    const cards = document.querySelectorAll('.guest-card');
+    cards.forEach(card => {
+      const matchesBuilding = bValue === 'all' || card.dataset.building === bValue;
+      const matchesSearch = card.dataset.name.includes(sValue) || card.dataset.uid.includes(sValue);
+      card.style.display = (matchesBuilding && matchesSearch) ? 'block' : 'none';
+    });
+  }
+
+  function openModal(mode, guestId = null) {
+    const form = document.getElementById('guestForm');
+    form.reset();
+    document.getElementById('formGuestId').value = '';
+    document.getElementById('modalTitle').textContent = mode === 'add' ? 'Register Resident' : 'Edit Resident';
+    document.getElementById('submitBtn').textContent = mode === 'add' ? 'Complete Registration' : 'Save Changes';
+
+    if (mode === 'edit' && guestId) {
+      const guest = guestsData.find(g => g.id === guestId);
+      if (guest) {
+        document.getElementById('formGuestId').value = guest.id;
+        document.getElementById('formFirstName').value = guest.first_name;
+        document.getElementById('formLastName').value = guest.last_name;
+        document.getElementById('formEmail').value = guest.email;
+        document.getElementById('formPhone').value = guest.phone;
+        document.getElementById('formRoom').value = guest.room_id;
+        document.getElementById('formCheckIn').value = guest.check_in_date;
+        document.getElementById('formAgreedRent').value = guest.agreed_rent;
+        document.getElementById('formOccupation').value = guest.occupation;
+        document.getElementById('formCollege').value = guest.student_college;
+        document.getElementById('formOccupancyPreference').value = guest.occupancy_preference || 'double';
+        toggleOccupationFields();
+      }
+    }
+    document.getElementById('guestModal').style.display = 'flex';
+  }
+
+  function toggleOccupationFields() {
+    const occ = document.getElementById('formOccupation').value;
+    document.getElementById('collegeField').style.display = occ === 'student' ? 'block' : 'none';
+  }
+
+  function closeModal(e) { if (e.target.id === 'guestModal') e.target.style.display = 'none'; }
+  function editGuest(id) { openModal('edit', id); }
+
+  document.getElementById('guestForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const guestId = document.getElementById('formGuestId').value;
+    const url = guestId ? `/api/guest/${guestId}/update/` : '{% url "add_guest" %}';
+    const formData = new FormData(e.target);
+    try {
+      const res = await fetch(url, { method: 'POST', body: formData });
+      const data = await res.json();
+      if (data.success) location.reload();
+      else alert('Error: ' + data.message);
+    } catch (err) { alert('System Error: ' + err.message); }
+  };
+
+  async function checkoutGuest(id) {
+    if (!confirm('End tenancy for this resident?')) return;
+    const formData = new FormData();
+    formData.append('csrfmiddlewaretoken', csrftoken);
+    try {
+      const res = await fetch(`/api/guest/${id}/checkout/`, { method: 'POST', body: formData });
+      const data = await res.json();
+      if (data.success) location.reload();
+      else alert('Error: ' + data.message);
+    } catch (err) { alert('System Error: ' + err.message); }
+  }
+
+  window.onload = () => {
+    const params = new URLSearchParams(window.location.search);
+    const roomId = params.get('room_id');
+    if (roomId) { openModal('add'); document.getElementById('formRoom').value = roomId; }
+  };
+</script>
+{% endblock %}

@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Rental Dashboard - Panesar Living OS{% endblock %}
+
+{% block extra_head %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,700,0,0" rel="stylesheet">
+<style>
+:root{--surface:#f8f5ee;--white:#fff;--yellow:#ffce00;--blue:#2b59ff;--violet:#9d4edd;--pink:#ff4d6d;--coral:#ff5c35;--green:#10b981;--dark:#16161a;--muted:#68656d;--shadow:4px 4px 0 var(--dark);--shadow-sm:2.5px 2.5px 0 var(--dark)}
+.rental-os{min-height:100vh;background:var(--surface);color:var(--dark);font-family:'Plus Jakarta Sans',sans-serif;padding:12px 12px 96px;position:relative;overflow:hidden}.rental-os *{box-sizing:border-box}.rental-os button{font:inherit;cursor:pointer}.ro-wrap{width:min(100%,560px);margin:auto}.ro-card{background:rgba(255,255,255,.82);backdrop-filter:blur(14px);border:2px solid var(--dark);border-radius:24px;box-shadow:var(--shadow);transition:.2s cubic-bezier(.34,1.56,.64,1)}.ro-card:hover{transform:translate(-1px,-2px);box-shadow:6px 6px 0 var(--dark)}.ro-header{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;margin-bottom:12px;position:sticky;top:8px;z-index:20}.ro-brand{display:flex;gap:9px;align-items:center}.ro-logo{width:40px;height:40px;background:var(--yellow);border:2px solid var(--dark);border-radius:15px;display:grid;place-items:center;font:900 20px Outfit;box-shadow:var(--shadow-sm);transform:rotate(-2deg)}.ro-kicker{font:900 9px Outfit;text-transform:uppercase;letter-spacing:.08em;background:var(--pink);color:#fff;border:1px solid var(--dark);border-radius:8px;padding:3px 6px}.ro-live{font-size:9px;font-weight:800;color:#08784f;margin-left:4px}.ro-live i{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);animation:roPulse 1.5s infinite}@keyframes roPulse{50%{opacity:.25}}.ro-title{font:900 15px Outfit}.ro-icon{width:36px;height:36px;border-radius:13px;background:#fff;border:2px solid var(--dark);box-shadow:var(--shadow-sm)}.ro-hero{padding:16px;background:linear-gradient(135deg,rgba(255,255,255,.94),rgba(255,206,0,.2),rgba(157,78,221,.1));overflow:hidden}.ro-hero-top{display:flex;justify-content:space-between;gap:12px}.ro-eyebrow{font:900 10px Outfit;background:var(--dark);color:#fff;border-radius:999px;padding:5px 9px;display:inline-block}.ro-eyebrow b{color:var(--yellow)}.ro-hero h1{font:900 23px Outfit;line-height:1.02;margin:8px 0 0}.ro-sub{font-size:11px;color:#625f67;font-weight:700;margin-top:5px}.ro-analytics{display:block;margin-top:12px;padding:14px;background:linear-gradient(135deg,#fff 0%,#e8ecff 45%,#f2dcff 100%);cursor:pointer;position:relative;overflow:hidden;color:inherit;text-decoration:none}.ro-analytics:after{content:"";position:absolute;width:110px;height:110px;border-radius:50%;right:-38px;top:-45px;background:rgba(43,89,255,.18)}.ro-ahead{display:flex;justify-content:space-between;align-items:center;position:relative;z-index:1}.ro-alabel{font:900 11px Outfit;text-transform:uppercase}.ro-open{font:900 10px Outfit;background:var(--blue);color:#fff;border:2px solid var(--dark);padding:5px 8px;border-radius:11px;box-shadow:var(--shadow-sm)}.ro-minis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin-top:10px;position:relative;z-index:1}.ro-mini{background:rgba(255,255,255,.82);border:2px solid var(--dark);border-radius:13px;padding:8px;min-width:0}.ro-mini small{display:block;font:800 8px Outfit;color:var(--muted);text-transform:uppercase}.ro-mini strong{display:block;font:900 14px Outfit;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ro-metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.ro-metric{padding:13px}.ro-metric small{font:900 9px Outfit;color:var(--muted);text-transform:uppercase}.ro-metric strong{font:900 25px Outfit;display:block;margin-top:4px}.ro-metric p{font-size:9px;font-weight:800;margin:4px 0 0}.ro-blue{background:linear-gradient(135deg,#fff,#e8edff)}.ro-yellow{background:linear-gradient(135deg,#fff,#fff0ae)}.ro-green{background:linear-gradient(135deg,#fff,#d9faec)}.ro-pink{background:linear-gradient(135deg,#fff,#ffe0e7)}.ro-section-head{display:flex;justify-content:space-between;align-items:center;margin:20px 0 9px}.ro-section-head h2{font:900 14px Outfit;margin:0}.ro-section-head span{font:900 9px Outfit;text-transform:uppercase;color:var(--muted)}.ro-quick{display:grid;grid-template-columns:1fr 1fr;gap:10px}.ro-quick-card{padding:13px;text-decoration:none;color:inherit;display:block;min-height:94px}.ro-qicon{width:31px;height:31px;border:2px solid var(--dark);border-radius:11px;display:grid;place-items:center;margin-bottom:8px;font-size:16px}.ro-quick-card h3{font:900 13px Outfit;margin:0}.ro-quick-card p{font-size:9px;font-weight:700;color:var(--muted);margin:3px 0}.ro-building{padding:13px;margin-bottom:10px}.ro-building-top{display:flex;justify-content:space-between;align-items:center}.ro-building h3{font:900 14px Outfit;margin:0}.ro-tag{font:900 8px Outfit;padding:4px 7px;border-radius:9px;background:var(--yellow);border:1.5px solid var(--dark)}.ro-rooms{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:11px}.ro-room{min-height:56px;border:2px solid var(--dark);border-radius:10px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:6px 8px;font:900 9px Outfit;background:#fff;color:var(--dark);text-decoration:none;overflow:hidden}.ro-room em{font:700 8px 'Plus Jakarta Sans',sans-serif;color:#625f67;font-style:normal;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ro-room.full{background:#d8faec}.ro-room.partial{background:#fff0b5}.ro-room.empty{background:#ffe0e7}.ro-bg{position:fixed;border-radius:50%;filter:blur(50px);opacity:.28;z-index:-1}.ro-b1{width:280px;height:280px;background:#ffd84d;top:80px;left:-100px}.ro-b2{width:300px;height:300px;background:#bca0ff;right:-110px;top:430px}.ro-b3{width:230px;height:230px;background:#ff9aae;left:15%;bottom:-100px}.ro-toast{position:fixed;top:18px;left:50%;transform:translate(-50%,-120px);z-index:100;background:var(--yellow);border:2px solid var(--dark);box-shadow:var(--shadow-sm);border-radius:15px;padding:10px 14px;font-size:11px;font-weight:800;transition:.25s}.ro-toast.show{transform:translate(-50%,0)}
+@media(min-width:700px){.ro-wrap{width:620px}.ro-metrics{grid-template-columns:repeat(4,1fr)}.ro-quick{grid-template-columns:repeat(4,1fr)}}
+</style>
+<link rel="stylesheet" href="{% static 'rental/css/rental-dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="rental-os">
+<div class="ro-bg ro-b1"></div><div class="ro-bg ro-b2"></div><div class="ro-bg ro-b3"></div>
+<div class="ro-wrap">
+<header class="ro-header ro-card">
+<div class="ro-brand"><div class="ro-logo">P</div><div><div><span class="ro-kicker">PANESAR / RENTAL OS</span><span class="ro-live"><i></i> Live</span></div><div class="ro-title">Panesar Living OS</div></div></div>
+<div class="ro-avatar" title="{{ user.get_full_name|default:user.username }}">{{ user.first_name|default:user.username|first|upper }}</div>
+</header>
+
+<section class="ro-hero ro-card">
+<div class="ro-hero-top"><div><span class="ro-eyebrow">PROPERTY CONTROL <b>• {{ total_rooms }} ROOMS</b></span><h1><span id="ro-greeting">Welcome</span>, {{ user.first_name|default:user.username }}!</h1><div class="ro-sub">Your rental operation at a glance.</div></div></div>
+
+<a class="ro-analytics ro-card" id="ro-analytics-link" href="{% url 'performance_dashboard' %}" data-metrics-url="{% url 'dashboard_metrics_api' %}">
+<div class="ro-ahead"><div><div class="ro-alabel">Analytics Overview</div><div class="ro-sub">Collection, occupancy & room health</div></div><span class="ro-open">OPEN →</span></div>
+<div class="ro-minis"><div class="ro-mini"><small>Expected</small><strong id="m-expected">Loading</strong></div><div class="ro-mini"><small>Collected</small><strong id="m-collected">Loading</strong></div><div class="ro-mini"><small>Receivable</small><strong id="m-receivable">Loading</strong></div><div class="ro-mini"><small>Efficiency</small><strong id="m-efficiency">Loading</strong></div><div class="ro-mini"><small>Occupancy</small><strong id="m-occupancy-rate">Loading</strong></div></div>
+</a>
+</section>
+
+<div class="ro-metrics">
+<div class="ro-metric ro-card ro-blue"><small>Total Rooms</small><strong>{{ total_rooms }}</strong><p>Fixed rental inventory</p></div>
+<div class="ro-metric ro-card ro-yellow"><small>Occupied</small><strong id="m-occupied">{{ active_rooms_count }}</strong><p id="m-occupancy">{{ occupancy_rate }}% occupancy</p></div>
+<div class="ro-metric ro-card ro-green"><small>Residents</small><strong>{{ total_guests }}</strong><p>Active residents</p></div>
+<div class="ro-metric ro-card ro-pink"><small>Room Balance</small><strong id="m-pending">₹—</strong><p>Rent + electricity due</p></div>
+</div>
+
+<div class="ro-section-head"><h2>Rental Management</h2><span>Core operations</span></div>
+<div class="ro-quick">
+<a class="ro-quick-card ro-card" href="{% url 'manage_buildings' %}"><div class="ro-qicon" style="background:#fff0ae">▦</div><h3>Rooms</h3><p>Buildings, occupancy & room billing</p></a>
+<a class="ro-quick-card ro-card" href="{% url 'manage_guests' %}"><div class="ro-qicon" style="background:#e7dcff">♙</div><h3>Residents</h3><p>Profiles & room assignments</p></a>
+<a class="ro-quick-card ro-card" href="{% url 'manage_payments' %}"><div class="ro-qicon" style="background:#d8faec">₹</div><h3>Payments</h3><p>Collect against room bills</p></a>
+<a class="ro-quick-card ro-card" href="{% url 'performance_dashboard' %}"><div class="ro-qicon" style="background:#ffe0e7">◈</div><h3>Analytics</h3><p>Collection trends & occupancy health</p></a>
+</div>
+
+<div class="ro-section-head"><h2>Buildings</h2><span>Room-first structure</span></div>
+<div class="ro-building-grid">
+{% for building in buildings %}
+<div class="ro-building ro-card">
+<div class="ro-building-top"><h3>{{ building.name }}</h3><span class="ro-tag">{{ building.occupied_count }} / {{ building.rooms|length }} OCCUPIED</span></div>
+<div class="ro-rooms">
+{% for room in building.rooms %}
+<a class="ro-room {% if room.occupancy_status == 'full' %}full{% elif room.occupancy_status == 'partial' %}partial{% else %}empty{% endif %}" href="{% url 'manage_buildings' %}?room_id={{ room.id }}" title="{{ room.number }} — {{ room.status_text }}"><strong>{{ room.number }}</strong><em>{% if room.current_tenants %}{{ room.current_tenants.0.full_name }}{% else %}Vacant{% endif %}</em></a>
+{% endfor %}
+</div></div>
+{% empty %}<div class="ro-card" style="padding:16px;font-size:12px;font-weight:800">No rooms found.</div>{% endfor %}
+</div>
+
+<div style="text-align:center;font:900 8px Outfit;color:#77727b;text-transform:uppercase;letter-spacing:.08em;margin-top:14px">Django-backed prototype • visual refinement later</div>
+</div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'rental/js/rental-dashboard.js' %}" defer></script>
+{% endblock %}

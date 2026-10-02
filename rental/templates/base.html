@@ -1,0 +1,67 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <title>{% block title %}Imperial Portal - Panesar PG{% endblock %}</title>
+
+    <!-- Favicon & Branding -->
+    <link rel="icon" type="image/x-icon" href="{% static 'rental/images/favicon.ico' %}">
+    <link rel="apple-touch-icon" href="{% static 'rental/images/apple-touch-icon.png' %}">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="{% static 'rental/css/theme.css' %}">
+    <link rel="stylesheet" href="{% static 'rental/css/rental-ui.css' %}">
+    {% block extra_head %}{% endblock %}
+</head>
+
+<body>
+    <!-- Global Navigation -->
+    <nav class="navigation-bar">
+        <a href="/" class="brand-logo">
+            <img src="{% static 'rental/images/panesar-logo.png' %}" alt="Panesar PG Logo">
+            <span>PANESAR / RENTAL OS</span>
+        </a>
+        {% if user.is_authenticated %}
+        <div class="rental-primary-nav" aria-label="Main navigation">
+            <a href="{% url 'dashboard' %}" {% if request.resolver_match.url_name == 'dashboard' %}aria-current="page"{% endif %}>Home</a>
+            <a href="{% url 'manage_buildings' %}" {% if request.resolver_match.url_name == 'manage_buildings' %}aria-current="page"{% endif %}>Rooms</a>
+            <a href="{% url 'manage_guests' %}" {% if request.resolver_match.url_name == 'manage_guests' %}aria-current="page"{% endif %}>Residents</a>
+            <a href="{% url 'manage_payments' %}" {% if request.resolver_match.url_name == 'manage_payments' %}aria-current="page"{% endif %}>Payments</a>
+            <a href="{% url 'performance_dashboard' %}" {% if request.resolver_match.url_name == 'performance_dashboard' %}aria-current="page"{% endif %}>Analytics</a>
+        </div>
+        {% endif %}
+        <div class="nav-actions">
+            {% if user.is_staff %}
+            <a href="{% url 'manage_users' %}" class="btn-premium btn-premium-secondary">Staff Access</a>
+            {% endif %}
+            <a href="{% url 'logout' %}" class="btn-premium btn-premium-primary" style="margin-left: 1rem;">End
+                Session</a>
+        </div>
+    </nav>
+
+    <main class="container-premium">
+        {% block content %}{% endblock %}
+    </main>
+
+    {% block footer %}
+    <footer style="text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.875rem;">
+        &copy; {% now "Y" %} Panesar PG Hotel. All Rights Reserved.
+    </footer>
+    {% endblock %}
+
+    {% block scripts %}{% endblock %}
+</body>
+
+</html>

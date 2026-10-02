@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Reservation Request - Panesar PG{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* Page Specific Refinements */
+  .booking-container {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .room-preview {
+    background: var(--primary-light);
+    padding: 2rem;
+    border-radius: var(--radius-md);
+    margin-bottom: 2rem;
+    border: 1px solid var(--primary);
+    text-align: center;
+  }
+
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .form-group label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+
+  .input {
+    width: 100%;
+    padding: 0.875rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+  }
+
+  @media (max-width: 480px) {
+    .room-preview {
+      padding: 1.5rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="booking-container">
+  <header class="card-premium glass-panel" style="margin-bottom: 2.5rem; padding: 2.5rem; text-align: center;">
+    <h1 class="font-luxury text-luxury" style="font-size: 2.5rem;">Request Residency</h1>
+    <p style="color: var(--text-muted); font-weight: 500;">Secure your space in the Imperial Complex.</p>
+  </header>
+
+  <div class="card-premium glass-panel">
+    <div class="room-preview">
+      <h3 class="font-luxury" style="color: var(--primary); font-size: 1.5rem;">Available Accommodations</h3>
+      <p style="font-size: 0.875rem; color: var(--text-muted);">Selection subject to real-time verification.</p>
+    </div>
+
+    <form method="POST">
+      {% csrf_token %}
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div class="form-group">
+          <label>First Name</label>
+          <input type="text" name="first_name" class="input" required placeholder="John">
+        </div>
+        <div class="form-group">
+          <label>Last Name</label>
+          <input type="text" name="last_name" class="input" required placeholder="Doe">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Preferred Contact (Email/Phone)</label>
+        <input type="text" name="contact" class="input" required placeholder="email@example.com or +91...">
+      </div>
+
+      <div class="form-group">
+        <label>Intended Cluster</label>
+        <select name="building_preference" class="input">
+          <option value="any">No Preference</option>
+          {% for building in buildings %}
+          <option value="{{ building.name }}">{{ building.name }}</option>
+          {% endfor %}
+          <option value="2">Building 2</option>
+          <option value="3">Building 3</option>
+          <option value="4">Building 4</option>
+          <option value="5">Building 5</option>
+        </select>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 2rem;">
+        <label>Additional Requirements</label>
+        <textarea name="notes" class="input" style="height: 100px; resize: none;"
+          placeholder="Let us know any specific needs..."></textarea>
+      </div>
+
+      <button type="submit" class="btn-premium btn-premium-primary"
+        style="width: 100%; padding: 1.25rem; font-size: 1rem;">
+        Submit Interest Request
+      </button>
+    </form>
+
+    <div style="text-align: center; margin-top: 2rem;">
+      <a href="{% url 'home' %}" style="font-size: 0.8125rem; color: var(--text-muted); text-decoration: none;">← Cancel
+        and Return</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block footer %}{% endblock %}

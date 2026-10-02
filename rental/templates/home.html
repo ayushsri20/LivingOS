@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+{% load static %}
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panesar PG - Premium Student Accommodation</title>
+  <link rel="stylesheet" href="{% static 'rental/css/theme.css' %}">
+  <style>
+    /* Page Specific Refinements */
+    .hero-section {
+      min-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 4rem 2rem;
+      background: var(--grad-surface);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-section::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle at center, var(--primary-light) 0%, transparent 70%);
+      z-index: 0;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      max-width: 800px;
+    }
+
+    .hero-badge {
+      display: inline-block;
+      padding: 0.5rem 1rem;
+      background: var(--primary-light);
+      color: var(--primary);
+      border-radius: 99px;
+      font-weight: 700;
+      font-size: 0.875rem;
+      margin-bottom: 2rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .hero-title {
+      font-size: clamp(2.5rem, 8vw, 4.5rem);
+      margin-bottom: 1.5rem;
+      line-height: 1.1;
+    }
+
+    .hero-subtitle {
+      font-size: clamp(1rem, 3vw, 1.25rem);
+      color: var(--text-muted);
+      margin-bottom: 3rem;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+      margin-top: 4rem;
+      width: 100%;
+      max-width: 1200px;
+    }
+
+    .feature-card {
+      text-align: left;
+    }
+
+    .feature-icon {
+      font-size: 2.5rem;
+      margin-bottom: 1.5rem;
+      display: block;
+    }
+
+    .apartment-showcase {
+      font-size: 10rem;
+      margin: 3rem 0;
+      animation: float 6s ease-in-out infinite;
+    }
+
+    @keyframes float {
+
+      0%,
+      100% {
+        transform: translateY(0px);
+      }
+
+      50% {
+        transform: translateY(-20px);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Global Navigation -->
+  <nav class="navigation-bar">
+    <a href="/" class="brand-logo">
+      <img src="{% static 'rental/images/panesar-logo.png' %}" alt="Panesar Logo">
+      <span>PANESAR PG</span>
+    </a>
+    <div class="nav-actions">
+      {% if user.is_authenticated %}
+      <a href="{% url 'dashboard' %}" class="btn-premium btn-premium-secondary">Go to Dashboard</a>
+      <a href="{% url 'logout' %}" class="btn-premium btn-premium-primary" style="margin-left: 1rem;">Logout</a>
+      {% else %}
+      <a href="{% url 'login' %}" class="btn-premium btn-premium-primary">Staff Login</a>
+      {% endif %}
+    </div>
+  </nav>
+
+  <main>
+    <section class="hero-section">
+      <div class="hero-content">
+        <span class="hero-badge">Luxury Student Housing</span>
+        <h1 class="hero-title font-luxury text-luxury">PANESAR HOTELS AND MOTELS</h1>
+        <p class="hero-subtitle">Premium student accommodations designed for success. Modern living across multiple
+          units in convenient locations.</p>
+
+        <div class="apartment-showcase"><span role="img" aria-label="Building">🏢</span></div>
+
+        <div class="cta-group">
+          {% if user.is_authenticated %}
+          <a href="{% url 'booking_page' %}" class="btn-premium btn-premium-primary"
+            style="padding: 1rem 2.5rem; font-size: 1.125rem;">Explore Our Rooms</a>
+          {% else %}
+          <a href="{% url 'login' %}" class="btn-premium btn-premium-primary"
+            style="padding: 1rem 2.5rem; font-size: 1.125rem;">Login to Book Now</a>
+          {% endif %}
+        </div>
+
+        <div class="feature-grid">
+          <div class="card-premium feature-card">
+            <span class="feature-icon">✨</span>
+            <h3 class="font-luxury" style="margin-bottom: 0.5rem; color: var(--primary);">Premium Facilities</h3>
+            <p style="font-size: 0.875rem; color: var(--text-muted);">Spacious, fully furnished rooms with modern
+              amenities and high-speed internet connectivity.</p>
+          </div>
+          <div class="card-premium feature-card">
+            <span class="feature-icon">🛡️</span>
+            <h3 class="font-luxury" style="margin-bottom: 0.5rem; color: var(--primary);">Secure Living</h3>
+            <p style="font-size: 0.875rem; color: var(--text-muted);">24/7 CCTV surveillance, secure entry points, and
+              professional management on-site.</p>
+          </div>
+          <div class="card-premium feature-card">
+            <span class="feature-icon">🧼</span>
+            <h3 class="font-luxury" style="margin-bottom: 0.5rem; color: var(--primary);">Clean Environment</h3>
+            <p style="font-size: 0.875rem; color: var(--text-muted);">Regular housekeeping services and well-maintained
+              common areas for a hygienic life.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer style="padding: 4rem 2rem; background: var(--grad-dark); color: white; text-align: center;">
+    <div class="font-luxury" style="font-size: 1.25rem; margin-bottom: 1rem; color: var(--primary);">PANESAR PG</div>
+    <p style="color: rgba(255,255,255,0.6); font-size: 0.875rem;">© 2026 Panesar Hotels and Motels. All rights reserved.
+    </p>
+  </footer>
+</body>
+
+</html>

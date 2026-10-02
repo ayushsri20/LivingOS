@@ -1,0 +1,277 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Rooms & Billing - Panesar PG{% endblock %}
+
+{% block extra_head %}
+<style>
+  .rooms-page{max-width:1100px;margin:0 auto;padding:1rem 0 3rem;color:#17171b;font-family:'Plus Jakarta Sans',sans-serif}
+  .rooms-head,.building-picker,.room-card,.room-modal{background:#fff;border:1px solid #e5e7eb;border-radius:18px;box-shadow:0 8px 28px #17171b0d}
+  .rooms-head{padding:1.5rem;margin-bottom:1rem;display:flex;justify-content:space-between;gap:1rem;align-items:center}
+  .rooms-head h1{font-size:1.7rem;margin:0}.rooms-head p{color:#6b7280;margin:.35rem 0 0}
+  .room-link{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;border:0;border-radius:10px;padding:.7rem 1rem;background:#253ff4;color:#fff;font-weight:700;cursor:pointer}
+  .building-picker{display:flex;gap:.5rem;flex-wrap:wrap;padding:1rem;margin-bottom:1rem}
+  .building-picker button{border:1px solid #d1d5db;background:#fff;border-radius:999px;padding:.55rem 1rem;font-weight:700;cursor:pointer}
+  .building-picker button[aria-pressed=true]{background:#17171b;color:#fff;border-color:#17171b}
+  .rooms-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:1rem}
+  .room-card{padding:1.1rem}.room-card h3{margin:0 0 .25rem;font-size:1.1rem}.room-resident{color:#6b7280;margin:0 0 1rem}
+  .room-facts{display:grid;grid-template-columns:1fr 1fr;gap:.65rem;margin-bottom:1rem}
+  .room-facts small{display:block;text-transform:uppercase;letter-spacing:.04em;color:#6b7280;font-size:.68rem;font-weight:700}
+  .room-facts strong{display:block;margin-top:.2rem}.room-actions{display:flex;gap:.5rem;flex-wrap:wrap}
+  .room-actions button{border:1px solid #d1d5db;background:#fff;border-radius:9px;padding:.55rem .7rem;font-weight:700;cursor:pointer}
+  .room-actions .primary{background:#253ff4;color:#fff;border-color:#253ff4}
+  .status{display:inline-block;border-radius:999px;padding:.25rem .55rem;font-size:.7rem;font-weight:800;background:#fef3c7;color:#854d0e}
+  .status.PAID{background:#dcfce7;color:#166534}.status.PARTIAL{background:#ffedd5;color:#9a3412}
+  .status.DUE{background:#fee2e2;color:#991b1b}
+  .room-modal{width:min(620px,calc(100% - 2rem));max-height:90vh;overflow:auto;padding:0}
+  .room-modal::backdrop{background:#111827a6}.modal-head{position:sticky;top:0;background:#fff;padding:1rem 1.25rem;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center}
+  .modal-head h2{margin:0;font-size:1.2rem}.modal-close{border:0;background:#f3f4f6;border-radius:8px;padding:.5rem .7rem;cursor:pointer}
+  .modal-content{padding:1.25rem}.modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+  .modal-grid>div{padding:.8rem;background:#f9fafb;border-radius:12px}.modal-grid small{display:block;color:#6b7280;text-transform:uppercase;font-size:.68rem;font-weight:700}
+  .modal-grid strong{display:block;margin-top:.25rem;font-size:1.05rem}
+  .field{display:grid;gap:.35rem;margin:.9rem 0}.field label{font-weight:700}.field input,.field select{padding:.75rem;border:1px solid #d1d5db;border-radius:9px;font:inherit}
+  .notice{padding:.8rem 1rem;background:#eff6ff;border-radius:10px;color:#1e40af;margin:.8rem 0}
+  .history{list-style:none;padding:0;margin:.5rem 0}.history li{padding:.65rem 0;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;gap:1rem}
+  .page-error{padding:1rem;border-radius:12px;background:#fee2e2;color:#991b1b;margin:1rem 0}
+  @media(max-width:560px){.rooms-head{align-items:flex-start;flex-direction:column}.modal-grid{grid-template-columns:1fr 1fr}}
+</style>
+<link rel="stylesheet" href="{% static 'rental/css/rental-ui.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="rooms-page" id="rooms-app" data-api-root="/api/rooms/">
+  <header class="rooms-head">
+    <div><h1>Rooms</h1><p>Choose a building, open a room, generate its bill, then collect payment.</p></div>
+    <a class="room-link" href="{% url 'dashboard' %}">Dashboard</a>
+  </header>
+  <div id="rooms-error" class="page-error" role="alert" hidden></div>
+  <nav class="building-picker" id="building-picker" aria-label="Buildings"></nav>
+  <div class="rooms-grid" id="rooms-grid" aria-live="polite">Loading room data…</div>
+</section>
+
+<dialog class="room-modal" id="room-modal">
+  <div class="modal-head"><h2 id="room-modal-title">Room details</h2><button class="modal-close" type="button" data-close="room-modal">Close</button></div>
+  <div class="modal-content" id="room-modal-content"></div>
+</dialog>
+<dialog class="room-modal" id="bill-modal">
+  <div class="modal-head"><h2>Generate Bill</h2><button class="modal-close" type="button" data-close="bill-modal">Close</button></div>
+  <div class="modal-content" id="bill-modal-content"></div>
+</dialog>
+<dialog class="room-modal" id="payment-modal">
+  <div class="modal-head"><h2>Collect Payment</h2><button class="modal-close" type="button" data-close="payment-modal">Close</button></div>
+  <div class="modal-content" id="payment-modal-content"></div>
+</dialog>
+<form hidden>{% csrf_token %}</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(() => {
+  const app = document.getElementById('rooms-app');
+  const apiRoot = app.dataset.apiRoot;
+  const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+  const state = { rooms: [], buildings: [], selectedBuilding: null };
+  const money = value => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(Number(value || 0));
+  const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+  const roomUrl = (id, suffix = '') => `${apiRoot}${encodeURIComponent(id)}/${suffix}`;
+  const showError = message => {
+    const target = document.getElementById('rooms-error');
+    target.textContent = message;
+    target.hidden = false;
+  };
+  const hideError = () => { document.getElementById('rooms-error').hidden = true; };
+
+  async function request(url, options = {}) {
+    const response = await fetch(url, {
+      ...options,
+      headers: { ...(options.body ? { 'Content-Type': 'application/json' } : {}), ...(options.method === 'POST' ? { 'X-CSRFToken': csrfToken } : {}), ...options.headers },
+    });
+    const payload = await response.json();
+    if (!response.ok || payload.success === false) throw new Error(payload.message || `Request failed (${response.status})`);
+    return payload;
+  }
+
+  function renderBuildings() {
+    const picker = document.getElementById('building-picker');
+    picker.innerHTML = state.buildings.map(name => `<button type="button" data-building="${escapeHtml(name)}" aria-pressed="${state.selectedBuilding === name}">${escapeHtml(name)}</button>`).join('');
+    picker.querySelectorAll('[data-building]').forEach(button => button.addEventListener('click', () => {
+      state.selectedBuilding = button.dataset.building;
+      renderBuildings();
+      renderRooms();
+    }));
+  }
+
+  function renderRooms() {
+    const rooms = state.rooms.filter(room => room.building === state.selectedBuilding);
+    const grid = document.getElementById('rooms-grid');
+    if (!rooms.length) {
+      grid.innerHTML = '<div class="room-card">No rooms are currently recorded for this building.</div>';
+      return;
+    }
+    grid.innerHTML = rooms.map(room => `
+      <article class="room-card">
+        <h3>${escapeHtml(room.room)} <span class="status ${escapeHtml(room.payment_status)}">${escapeHtml(room.payment_status)}</span></h3>
+        <p class="room-resident">${escapeHtml(room.resident)}</p>
+        <div class="room-facts">
+          <div><small>Agreed rent</small><strong>${money(room.agreed_rent)}</strong></div>
+          <div><small>Current bill</small><strong>${money(room.total_bill)}</strong></div>
+          <div><small>Collected</small><strong>${money(room.collected_amount)}</strong></div>
+          <div><small>Outstanding</small><strong>${money(room.outstanding_amount)}</strong></div>
+        </div>
+        <div class="room-actions">
+          <button type="button" data-view="${room.id}">View room</button>
+          <button type="button" class="primary" data-generate="${room.id}">Generate bill</button>
+          <button type="button" data-collect="${room.id}">Collect</button>
+        </div>
+      </article>`).join('');
+    grid.querySelectorAll('[data-view]').forEach(button => button.addEventListener('click', () => openRoom(button.dataset.view)));
+    grid.querySelectorAll('[data-generate]').forEach(button => button.addEventListener('click', () => openGenerate(button.dataset.generate)));
+    grid.querySelectorAll('[data-collect]').forEach(button => button.addEventListener('click', () => openCollect(button.dataset.collect)));
+  }
+
+  async function loadRooms() {
+    hideError();
+    try {
+      const payload = await request(apiRoot);
+      state.rooms = payload.rooms;
+      state.buildings = payload.buildings.map(building => building.name);
+      const requestedRoomId = new URLSearchParams(window.location.search).get('room_id');
+      const requestedRoom = requestedRoomId && state.rooms.find(room => String(room.id) === requestedRoomId);
+      state.selectedBuilding = requestedRoom ? requestedRoom.building : state.buildings[0] || null;
+      renderBuildings();
+      renderRooms();
+      if (requestedRoom) openRoom(requestedRoom.id);
+    } catch (error) {
+      document.getElementById('rooms-grid').textContent = 'Room data could not be loaded.';
+      showError(error.message);
+    }
+  }
+
+  async function loadRoom(id) {
+    const [detail, payments] = await Promise.all([
+      request(roomUrl(id)),
+      request(roomUrl(id, 'payments/')),
+    ]);
+    return { ...detail.room, payments: payments.payments };
+  }
+
+  async function openRoom(id) {
+    try {
+      const room = await loadRoom(id);
+      document.getElementById('room-modal-title').textContent = `${room.building} · ${room.room}`;
+      const paymentHistory = room.payments.length
+        ? room.payments.map(payment => `<li><span>${escapeHtml(payment.date)} · ${escapeHtml(payment.method)}</span><strong>${money(payment.amount)}</strong></li>`).join('')
+        : '<li>No payments recorded.</li>';
+      document.getElementById('room-modal-content').innerHTML = `
+        <p><strong>${escapeHtml(room.resident)}</strong></p>
+        <div class="modal-grid">
+          <div><small>Agreed rent</small><strong>${money(room.agreed_rent)}</strong></div>
+          <div><small>Total bill</small><strong>${money(room.total_bill)}</strong></div>
+          <div><small>Previous reading</small><strong>${escapeHtml(room.previous_reading)}</strong></div>
+          <div><small>Current reading</small><strong>${room.current_reading == null ? 'Not recorded' : escapeHtml(room.current_reading)}</strong></div>
+          <div><small>Electricity (${escapeHtml(room.units_used)} units × ${money(room.electricity_rate)})</small><strong>${money(room.electricity_amount)}</strong></div>
+          <div><small>Collected</small><strong>${money(room.collected_amount)}</strong></div>
+          <div><small>Outstanding</small><strong>${money(room.outstanding_amount)}</strong></div>
+          <div><small>Status</small><strong><span class="status ${escapeHtml(room.payment_status)}">${escapeHtml(room.payment_status)}</span></strong></div>
+        </div>
+        <h3>Payment history</h3><ul class="history">${paymentHistory}</ul>
+        <div class="room-actions">
+          <button class="primary" type="button" data-detail-generate="${room.id}">Generate bill</button>
+          <button type="button" data-detail-collect="${room.id}">Collect</button>
+        </div>`;
+      document.querySelector('[data-detail-generate]').addEventListener('click', event => openGenerate(event.currentTarget.dataset.detailGenerate));
+      document.querySelector('[data-detail-collect]').addEventListener('click', event => openCollect(event.currentTarget.dataset.detailCollect));
+      const roomModal = document.getElementById('room-modal');
+      if (!roomModal.open) roomModal.showModal();
+    } catch (error) {
+      showError(error.message);
+    }
+  }
+
+  async function openGenerate(id) {
+    try {
+      const payload = await request(roomUrl(id, 'current-bill/'));
+      const room = payload;
+      const modal = document.getElementById('bill-modal-content');
+      modal.innerHTML = `
+        <div class="notice">Room ${escapeHtml(room.room)} · ${escapeHtml(room.resident)}<br>Previous reading: <strong>${escapeHtml(room.previous_reading)}</strong> · Rate: <strong>${money(room.electricity_rate)} / unit</strong></div>
+        <form id="generate-form">
+          <div class="field"><label for="current-reading">Current electricity reading</label><input id="current-reading" name="current_reading" type="number" min="${escapeHtml(room.previous_reading)}" step="0.01" required></div>
+          <button class="room-link" type="submit">Generate bill</button>
+        </form>`;
+      document.getElementById('generate-form').addEventListener('submit', async event => {
+        event.preventDefault();
+        const submit = event.currentTarget.querySelector('button[type=submit]');
+        submit.disabled = true;
+        try {
+          const currentReading = document.getElementById('current-reading').value;
+          const result = await request(roomUrl(id, 'generate-bill/'), { method: 'POST', body: JSON.stringify({ current_reading: currentReading }) });
+          modal.innerHTML = `
+            <div class="notice">Bill generated and saved for ${escapeHtml(result.room)}.</div>
+            <div class="modal-grid">
+              <div><small>Units used</small><strong>${escapeHtml(result.units_used)}</strong></div>
+              <div><small>Electricity</small><strong>${money(result.electricity_amount)}</strong></div>
+              <div><small>Agreed rent</small><strong>${money(result.agreed_rent)}</strong></div>
+              <div><small>Total bill</small><strong>${money(result.total_bill)}</strong></div>
+            </div>
+            <div class="room-actions" style="margin-top:1rem"><button type="button" class="primary" id="generated-collect">Collect</button></div>`;
+          document.getElementById('generated-collect').addEventListener('click', () => {
+            document.getElementById('bill-modal').close();
+            openCollect(id);
+          });
+          document.getElementById('room-modal').close();
+          await loadRooms();
+        } catch (error) {
+          showError(error.message);
+          submit.disabled = false;
+        }
+      });
+      document.getElementById('bill-modal').showModal();
+    } catch (error) {
+      showError(error.message);
+    }
+  }
+
+  async function openCollect(id) {
+    try {
+      const payload = await request(roomUrl(id, 'current-bill/'));
+      const room = payload;
+      const modal = document.getElementById('payment-modal-content');
+      modal.innerHTML = `
+        <div class="modal-grid">
+          <div><small>Total bill</small><strong>${money(room.total_bill)}</strong></div>
+          <div><small>Already collected</small><strong>${money(room.collected_amount)}</strong></div>
+          <div><small>Outstanding</small><strong>${money(room.outstanding_amount)}</strong></div>
+          <div><small>Status</small><strong>${escapeHtml(room.payment_status)}</strong></div>
+        </div>
+        <form id="collect-form">
+          <div class="field"><label for="payment-amount">Payment amount</label><input id="payment-amount" name="amount" type="number" min="0.01" step="0.01" required></div>
+          <button class="room-link" type="submit">Record collection</button>
+        </form>`;
+      document.getElementById('collect-form').addEventListener('submit', async event => {
+        event.preventDefault();
+        const submit = event.currentTarget.querySelector('button[type=submit]');
+        submit.disabled = true;
+        try {
+          const amount = document.getElementById('payment-amount').value;
+          const result = await request(roomUrl(id, 'collect/'), { method: 'POST', body: JSON.stringify({ amount }) });
+          modal.innerHTML = `<div class="notice">Payment recorded: ${money(result.amount)}. Outstanding: ${money(result.outstanding_amount)}. Status: ${escapeHtml(result.payment_status)}.</div>`;
+          document.getElementById('payment-modal').close();
+          await loadRooms();
+          await openRoom(id);
+        } catch (error) {
+          showError(error.message);
+          submit.disabled = false;
+        }
+      });
+      document.getElementById('payment-modal').showModal();
+    } catch (error) {
+      showError(error.message);
+    }
+  }
+
+  document.querySelectorAll('[data-close]').forEach(button => button.addEventListener('click', () => document.getElementById(button.dataset.close).close()));
+  loadRooms();
+})();
+</script>
+{% endblock %}

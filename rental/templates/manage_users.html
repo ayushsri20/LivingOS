@@ -1,0 +1,270 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Owner Access Control - Panesar PG{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* Page Specific Refinements */
+    .user-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .user-card {
+        transition: transform 0.2s;
+    }
+
+    .user-card:hover {
+        transform: translateY(-4px);
+    }
+
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .user-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: var(--grad-primary);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+    }
+
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(8px);
+        z-index: 2000;
+        justify-content: center;
+        align-items: center;
+        padding: 1rem;
+    }
+
+    .modal-content {
+        width: 100%;
+        max-width: 450px;
+        padding: 2.5rem;
+    }
+
+    .input {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-md);
+        font-size: 0.875rem;
+    }
+
+    @media (max-width: 640px) {
+        .user-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<header class="card-premium glass-panel" style="margin-bottom: 2.5rem; padding: 2.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h1 class="font-luxury text-luxury" style="font-size: 2.5rem;">Ownership Control</h1>
+            <p style="color: var(--text-muted); font-weight: 500;">Manage superuser accounts and high-level
+                administrative access.</p>
+        </div>
+        <div style="display: flex; gap: 1rem;">
+            <button onclick="openAddModal()" class="btn-premium btn-premium-primary">+ Grant Ownership</button>
+            <a href="{% url 'dashboard' %}" class="btn-premium btn-premium-secondary">← Dashboard</a>
+        </div>
+    </div>
+</header>
+
+<div class="user-grid">
+    {% for staff_member in managed_users %}
+    <div class="card-premium user-card glass-panel">
+        <div class="user-info">
+            <div class="user-avatar">{{ staff_member.username|slice:":2"|upper }}</div>
+            <div>
+                <h3 class="font-luxury" style="font-size: 1.125rem;">{{
+                    staff_member.get_full_name|default:staff_member.username }}</h3>
+                <p style="color: var(--text-muted); font-size: 0.8125rem;">{{ staff_member.email|default:"No email set"
+                    }}</p>
+            </div>
+            {% if staff_member.is_superuser %}
+            <span class="badge-premium badge-success" style="margin-left: auto; font-size: 0.65rem;">OWNER</span>
+            {% endif %}
+        </div>
+        <div
+            style="display: flex; gap: 0.5rem; justify-content: flex-end; border-top: 1px solid var(--border-subtle); padding-top: 1rem;">
+            <button class="btn-premium btn-premium-secondary edit-user-btn"
+                style="padding: 0.4rem 0.8rem; font-size: 0.75rem;" data-id="{{ staff_member.id }}"
+                data-fn="{{ staff_member.first_name|escapejs }}" data-ln="{{ staff_member.last_name|escapejs }}"
+                data-email="{{ staff_member.email|escapejs }}"
+                data-superuser="{{ staff_member.is_superuser|yesno:'true,false' }}">Edit
+                Credentials</button>
+            {% if request.user.id != staff_member.id %}
+            <button onclick="deleteUser('{{ staff_member.id }}')" class="btn-premium btn-premium-secondary"
+                style="padding: 0.4rem 0.8rem; font-size: 0.75rem; border-color: var(--danger); color: var(--danger);">Delete</button>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Add Modal -->
+<div id="addModal" class="modal-overlay" onclick="closeModals(event)">
+    <div class="card-premium modal-content glass-panel" onclick="event.stopPropagation()">
+        <h2 class="font-luxury text-luxury" style="margin-bottom: 2rem; font-size: 1.5rem;">New Staff Onboarding</h2>
+        <form id="addUserForm">
+            {% csrf_token %}
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label
+                    style="font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Username</label>
+                <input type="text" name="username" class="input" required placeholder="ayush_admin">
+            </div>
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label
+                    style="font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Initial
+                    Password</label>
+                <input type="password" name="password" class="input" required placeholder="••••••••">
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div class="form-group">
+                    <label
+                        style="font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">First
+                        Name</label>
+                    <input type="text" name="first_name" class="input">
+                </div>
+                <div class="form-group">
+                    <label
+                        style="font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Last
+                        Name</label>
+                    <input type="text" name="last_name" class="input">
+                </div>
+            </div>
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label
+                    style="font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Work
+                    Email</label>
+                <input type="email" name="email" class="input" placeholder="official@panesarpghotel.com">
+            </div>
+            <div class="form-group" style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 2rem;">
+                <input type="checkbox" id="addIsStaff" name="is_staff"
+                    style="width: 18px; height: 18px; accent-color: var(--primary);">
+                <label for="addIsStaff" style="font-weight: 800; color: var(--text-main); font-size: 0.8125rem;">Grant
+                    Administrative Privileges</label>
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                <button type="submit" class="btn-premium btn-premium-primary" style="flex: 2;">Provision
+                    Account</button>
+                <button type="button" onclick="document.getElementById('addModal').style.display='none'"
+                    class="btn-premium btn-premium-secondary" style="flex: 1;">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="editModal" class="modal-overlay" onclick="closeModals(event)">
+    <div class="card-premium modal-content glass-panel" onclick="event.stopPropagation()">
+        <h2 class="font-luxury text-luxury" style="margin-bottom: 2rem; font-size: 1.5rem;">Edit Member Details</h2>
+        <form id="editUserForm">
+            {% csrf_token %}
+            <input type="hidden" id="editUserId">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div class="form-group">
+                    <label
+                        style="font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">First
+                        Name</label>
+                    <input type="text" id="editFirstName" name="first_name" class="input">
+                </div>
+                <div class="form-group">
+                    <label
+                        style="font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Last
+                        Name</label>
+                    <input type="text" id="editLastName" name="last_name" class="input">
+                </div>
+            </div>
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label
+                    style="font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Updated
+                    Email</label>
+                <input type="email" id="editEmail" name="email" class="input">
+            </div>
+            <div class="form-group" style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 2rem;">
+                <input type="checkbox" id="editIsStaff" name="is_staff"
+                    style="width: 18px; height: 18px; accent-color: var(--primary);">
+                <label for="editIsStaff" style="font-weight: 800; color: var(--text-main); font-size: 0.8125rem;">Active
+                    Admin Access</label>
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                <button type="submit" class="btn-premium btn-premium-primary" style="flex: 2;">Commit Changes</button>
+                <button type="button" onclick="document.getElementById('editModal').style.display='none'"
+                    class="btn-premium btn-premium-secondary" style="flex: 1;">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function openAddModal() {
+        document.getElementById('addUserForm').reset();
+        document.getElementById('addModal').style.display = 'flex';
+    }
+
+    document.addEventListener('click', e => {
+        if (e.target.classList.contains('edit-user-btn')) {
+            const b = e.target;
+            document.getElementById('editUserId').value = b.dataset.id;
+            document.getElementById('editFirstName').value = b.dataset.fn;
+            document.getElementById('editLastName').value = b.dataset.ln;
+            document.getElementById('editEmail').value = b.dataset.email;
+            document.getElementById('editIsStaff').checked = b.dataset.superuser === 'true';
+            document.getElementById('editModal').style.display = 'flex';
+        }
+    });
+
+    function closeModals(e) {
+        if (e.target.classList.contains('modal-overlay')) {
+            document.getElementById('editModal').style.display = 'none';
+            document.getElementById('addModal').style.display = 'none';
+        }
+    }
+
+    document.getElementById('addUserForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        formData.set('is_staff', document.getElementById('addIsStaff').checked);
+        const res = await fetch(`/api/user/add/`, { method: 'POST', body: formData });
+        if ((await res.json()).success) location.reload(); else alert('Provisioning Error');
+    };
+
+    document.getElementById('editUserForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('editUserId').value;
+        const formData = new FormData(e.target);
+        formData.set('is_staff', document.getElementById('editIsStaff').checked);
+        const res = await fetch(`/api/user/${id}/update/`, { method: 'POST', body: formData });
+        if ((await res.json()).success) location.reload(); else alert('Credential Update Error');
+    };
+
+    async function deleteUser(id) {
+        if (!confirm('Evict staff member from portal?')) return;
+        const fd = new FormData();
+        fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+        const res = await fetch(`/api/user/${id}/delete/`, { method: 'POST', body: fd });
+        if ((await res.json()).success) location.reload(); else alert('De-provisioning Error');
+    }
+</script>
+{% endblock %}

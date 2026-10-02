@@ -1,0 +1,349 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Manage Buildings & Rooms - Panesar PG{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* Page Specific Overrides */
+  body {
+    background: linear-gradient(135deg, #8B6F47 0%, #6B5638 100%) !important;
+    background-attachment: fixed !important;
+  }
+
+  .card-premium.header {
+    background: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+  }
+
+  .rooms-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .rooms-table th {
+    padding: 12px;
+    text-align: left;
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    border-bottom: 2px solid var(--border-subtle);
+  }
+
+  .rooms-table td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-subtle);
+    font-size: 0.8125rem;
+  }
+
+  .room-input {
+    padding: 0.5rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    font-size: 0.8125rem;
+  }
+
+  .room-input:focus {
+    border-color: var(--primary);
+    outline: none;
+  }
+
+  .status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 800;
+  }
+
+  .status-available {
+    background: #d1fae5;
+    color: #065f46;
+  }
+
+  .status-booked {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  .status-partial {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  .add-room-section {
+    margin-bottom: 2rem;
+  }
+
+  .add-room-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    align-items: end;
+  }
+
+  @media (max-width: 768px) {
+
+    .rooms-table,
+    .rooms-table thead,
+    .rooms-table tbody,
+    .rooms-table th,
+    .rooms-table td,
+    .rooms-table tr {
+      display: block;
+    }
+
+    .rooms-table thead {
+      display: none;
+    }
+
+    .rooms-table tr {
+      margin-bottom: 1rem;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      background: var(--bg-canvas);
+    }
+
+    .rooms-table td {
+      border: none;
+      padding: 0.5rem 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .rooms-table td::before {
+      content: attr(data-label);
+      font-weight: 800;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card-premium header glass-panel">
+  <div style="display: flex; align-items: center;">
+    <h1 class="font-luxury" style="font-size: 1.5rem; color: var(--primary);">Manage Inventory</h1>
+  </div>
+  <div style="display: flex; gap: 0.5rem;">
+    <a href="{% url 'dashboard' %}" class="btn-premium btn-premium-secondary">← Dashboard</a>
+  </div>
+</div>
+
+<div id="successAlert"
+  style="display:none; background: #d1fae5; color: #065f46; padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1rem; font-size: 0.875rem; font-weight: 600;">
+</div>
+<div id="errorAlert"
+  style="display:none; background: #fee2e2; color: #991b1b; padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1rem; font-size: 0.875rem; font-weight: 600;">
+</div>
+
+<div class="card-premium add-room-section glass-panel">
+  <h3 class="font-luxury" style="margin-bottom: 1.5rem; color: var(--primary);">➕ Add New Room</h3>
+  <form id="addRoomForm" class="add-room-form">
+    {% csrf_token %}
+    <div class="form-group">
+      <label style="font-size: 0.75rem;">Room Number</label>
+      <input type="text" id="newRoomNumber" class="room-input" placeholder="e.g., G-01" required style="width: 100%;">
+    </div>
+    <div class="form-group">
+      <label style="font-size: 0.75rem;">Building</label>
+      <select id="newRoomBuilding" class="room-input" required style="width: 100%;">
+        <option value="">Select building</option>
+        {% for building_name, rooms_list in buildings %}
+        <option value="{{ building_name }}">{{ building_name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
+      <label style="font-size: 0.75rem;">Type</label>
+      <select id="newRoomType" class="room-input" required style="width: 100%;">
+        <option value="">Type</option>
+        <option value="single">Single</option>
+        <option value="double">Double</option>
+        <option value="suite">Suite</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label style="font-size: 0.75rem;">Price (₹)</label>
+      <input type="number" id="newRoomPrice" class="room-input" placeholder="Price" step="0.01" required
+        style="width: 100%;">
+    </div>
+    <div class="form-group">
+      <label style="font-size: 0.75rem;">Capacity (Max 2 Tenants)</label>
+      <select id="newRoomCapacity" class="room-input" required style="width: 100%;">
+        <option value="1">1 Person</option>
+        <option value="2" selected>2 People (Max)</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label style="font-size: 0.75rem;">Agreed Rent</label>
+      <input type="number" id="newRoomAgreedRent" class="room-input" placeholder="Optional" step="0.01"
+        style="width: 100%;">
+    </div>
+    <button type="submit" class="btn-premium btn-premium-primary">Add Room</button>
+  </form>
+</div>
+
+<div class="building-grid">
+  {% for building_name, rooms_list in buildings %}
+  <div class="card-premium building-card" style="padding: 0;">
+    <div class="building-header" style="background: var(--grad-primary); color: white; padding: 1rem;">
+      <div class="font-luxury" style="font-size: 1.25rem;">Building {{ building_name }}</div>
+      <div style="font-size: 0.7rem; opacity: 0.8;">{{ rooms_list|length }} Units</div>
+    </div>
+
+    <div style="overflow-x: auto;">
+      <table class="rooms-table">
+        <thead>
+          <tr>
+            <th>Room #</th>
+            <th>Type</th>
+            <th>Capacity</th>
+            <th>Price/Rent</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for room in rooms_list %}
+          <tr data-room-id="{{ room.id }}">
+            <td data-label="Room #">
+              <input type="text" class="room-input room-number" value="{{ room.number }}" style="width:70px;">
+            </td>
+            <td data-label="Type">
+              <select class="room-input room-type" style="width: 90px;">
+                <option value="single" {% if room.room_type == 'single' %}selected{% endif %}>Single</option>
+                <option value="double" {% if room.room_type == 'double' %}selected{% endif %}>Double</option>
+                <option value="suite" {% if room.room_type == 'suite' %}selected{% endif %}>Suite</option>
+              </select>
+            </td>
+            <td data-label="Capacity">
+              <input type="number" class="room-input room-capacity" value="{{ room.capacity }}" min="1" max="2"
+                style="width: 60px;" title="Max 2 tenants per room">
+            </td>
+            <td data-label="Price/Rent">
+              <div style="display:flex; flex-direction: column; gap:4px;">
+                <input type="number" class="room-input room-price" value="{{ room.price }}" step="0.01"
+                  style="width:90px;" title="Base Price">
+                <input type="number" class="room-input room-agreed-rent"
+                  value="{{ room.agreed_rent|default_if_none:'' }}" placeholder="Agreed" step="0.01" style="width:90px;"
+                  title="Agreed Rent">
+              </div>
+            </td>
+            <td data-label="Status">
+              <label
+                style="margin: 0; cursor: pointer; display: flex; flex-direction: column; gap: 4px; align-items: start;">
+                <div style="display: flex; align-items: center; gap: 4px;">
+                  <input type="checkbox" class="room-status" {% if room.is_available %}checked{% endif %}>
+                  {% if room.is_available %}
+                  <span class="status-badge status-available">Live</span>
+                  {% else %}
+                  <span class="status-badge status-booked">Hidden</span>
+                  {% endif %}
+                </div>
+                {% with occ=room.current_occupancy cap=room.capacity %}
+                <span
+                  class="status-badge {% if occ == 0 %}status-available{% elif occ < cap %}status-partial{% else %}status-booked{% endif %}"
+                  style="{% if occ == 0 %}background: #ebf8ff; color: #2b6cb0;{% endif %}">
+                  {% if occ == 0 %}Empty (0/{{ cap }})
+                  {% elif occ < cap %}Filled ({{ occ }}/{{ cap }}) {% else %}Full ({{ cap }}/{{ cap }}) {% endif %}
+                    </span>
+                    {% endwith %}
+              </label>
+            </td>
+            <td data-label="Actions">
+              <div style="display: flex; gap: 4px;">
+                <button class="btn-premium btn-premium-primary btn-save" data-id="{{ room.id }}"
+                  style="padding: 0.4rem 0.8rem; font-size: 0.7rem;">Save</button>
+                <button class="btn-premium btn-premium-secondary btn-delete" data-id="{{ room.id }}"
+                  style="padding: 0.4rem 0.8rem; font-size: 0.7rem; border-color: var(--danger); color: var(--danger);">Del</button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const csrftoken = '{{ csrf_token }}';
+
+  function showAlert(message, type) {
+    const alertEl = type === 'success' ? document.getElementById('successAlert') : document.getElementById('errorAlert');
+    alertEl.textContent = message;
+    alertEl.style.display = 'block';
+    setTimeout(() => { alertEl.style.display = 'none'; }, 4000);
+  }
+
+  document.getElementById('addRoomForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData();
+    formData.append('room_number', document.getElementById('newRoomNumber').value);
+    formData.append('building_name', document.getElementById('newRoomBuilding').value);
+    formData.append('room_type', document.getElementById('newRoomType').value);
+    formData.append('capacity', document.getElementById('newRoomCapacity').value);
+    formData.append('price', document.getElementById('newRoomPrice').value);
+    formData.append('agreed_rent', document.getElementById('newRoomAgreedRent').value);
+    formData.append('csrfmiddlewaretoken', csrftoken);
+
+    try {
+      const response = await fetch('{% url "add_room" %}', { method: 'POST', body: formData });
+      const data = await response.json();
+      if (data.success) {
+        showAlert(data.message, 'success');
+        setTimeout(() => location.reload(), 1000);
+      } else showAlert(data.message, 'error');
+    } catch (error) { showAlert('Error: ' + error.message, 'error'); }
+  });
+
+  document.querySelectorAll('.btn-save').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const roomId = btn.dataset.id;
+      const row = document.querySelector(`tr[data-room-id="${roomId}"]`);
+      const formData = new FormData();
+      formData.append('number', row.querySelector('.room-number').value);
+      formData.append('room_type', row.querySelector('.room-type').value);
+      formData.append('capacity', row.querySelector('.room-capacity').value);
+      formData.append('price', row.querySelector('.room-price').value);
+      formData.append('agreed_rent', row.querySelector('.room-agreed-rent').value);
+      formData.append('is_available', row.querySelector('.room-status').checked);
+      formData.append('csrfmiddlewaretoken', csrftoken);
+
+      try {
+        const response = await fetch(`/api/room/${roomId}/update/`, { method: 'POST', body: formData });
+        const data = await response.json();
+        if (data.success) showAlert(data.message, 'success');
+        else showAlert(data.message, 'error');
+      } catch (error) { showAlert('Error: ' + error.message, 'error'); }
+    });
+  });
+
+  document.querySelectorAll('.btn-delete').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete this room?')) return;
+      const roomId = btn.dataset.id;
+      const formData = new FormData();
+      formData.append('csrfmiddlewaretoken', csrftoken);
+      try {
+        const response = await fetch(`/api/room/${roomId}/delete/`, { method: 'POST', body: formData });
+        const data = await response.json();
+        if (data.success) {
+          showAlert(data.message, 'success');
+          setTimeout(() => location.reload(), 1000);
+        } else showAlert(data.message, 'error');
+      } catch (error) { showAlert('Error: ' + error.message, 'error'); }
+    });
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,93 @@
+.ro-avatar {
+  align-items: center;
+  background: var(--violet);
+  border: 2px solid var(--dark);
+  border-radius: 50%;
+  box-shadow: var(--shadow-sm);
+  color: #fff;
+  display: flex;
+  font: 900 15px Outfit, sans-serif;
+  height: 40px;
+  justify-content: center;
+  width: 40px;
+}
+
+.ro-analytics:focus-visible,
+.ro-room:focus-visible,
+.rental-primary-nav a:focus-visible {
+  outline: 3px solid var(--violet);
+  outline-offset: 3px;
+}
+
+.ro-analytics:hover {
+  color: var(--dark);
+  transform: translate(-1px, -2px);
+}
+
+.ro-building-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.ro-building-top h3 {
+  font-size: 16px;
+}
+
+.ro-tag {
+  font-size: 9px;
+}
+
+.ro-room {
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.ro-room:hover {
+  box-shadow: 2px 2px 0 var(--dark);
+  color: var(--dark);
+  transform: translateY(-2px);
+}
+
+@media (max-width: 560px) {
+  .ro-minis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ro-minis .ro-mini:last-child {
+    grid-column: span 2;
+  }
+
+  .ro-rooms {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 700px) {
+  .ro-wrap {
+    width: min(100%, 940px);
+  }
+
+  .ro-building-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ro-rooms {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1100px) {
+  .ro-building-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .ro-rooms {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ro-card,
+  .ro-room {
+    transition: none;
+  }
+}

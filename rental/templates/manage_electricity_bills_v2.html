@@ -1,0 +1,426 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Utility Matrix - Panesar PG{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* Page Specific Refinements */
+  .utility-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .utility-card {
+    border-top: 4px solid #f59e0b;
+  }
+
+  .bill-history {
+    max-height: 200px;
+    overflow-y: auto;
+    margin-top: 1rem;
+    background: var(--bg-main);
+    padding: 0.75rem;
+    border-radius: var(--radius-md);
+  }
+
+  .bill-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    background: var(--bg-canvas);
+    margin-bottom: 0.4rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 0.5rem;
+    font-size: 0.8125rem;
+  }
+
+  .input-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .input {
+    width: 100%;
+    padding: 0.625rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    font-size: 0.8125rem;
+  }
+
+  /* Modal Styles */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+
+  .modal-content {
+    max-width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  @media (max-width: 640px) {
+    .utility-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<header class="card-premium glass-panel" style="margin-bottom: 2.5rem; padding: 2.5rem;">
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <h1 class="font-luxury text-luxury" style="font-size: 2.5rem;">Utility Matrix</h1>
+      <p style="color: var(--text-muted); font-weight: 500;">Electricity meter tracking and resource billing management.
+      </p>
+    </div>
+    <div style="display: flex; gap: 1rem;">
+      <button class="btn-premium btn-premium-primary" onclick="openBulkModal()">⚡ Generate Monthly Bills</button>
+      <a href="{% url 'dashboard' %}" class="btn-premium btn-premium-secondary">← Dashboard</a>
+    </div>
+  </div>
+</header>
+
+<div class="utility-grid">
+  {% for data in bill_stats %}
+  <div class="card-premium utility-card">
+    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1.5rem;">
+      <div>
+        <h3 class="font-luxury" style="font-size: 1.25rem; color: var(--primary);">Room {{ data.room.number }}</h3>
+        <p style="font-size: 0.875rem; color: var(--text-main); font-weight: 600; margin-top: 0.25rem;">
+          {% if data.tenant %}
+          {{ data.tenant.full_name }}
+          {% else %}
+          <span style="color: var(--text-muted); font-style: italic;">Vacant</span>
+          {% endif %}
+        </p>
+      </div>
+      <div style="text-align: right;">
+        <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted);">Latest Reading</div>
+        <div style="font-size: 1.125rem; font-weight: 900; color: var(--text-main);">{{ data.latest_reading|floatformat:0 }}</div>
+        {% if data.latest_units %}
+        <div style="font-size: 0.75rem; color: var(--success); font-weight: 600; margin-top: 0.25rem;">
+          {{ data.latest_units|floatformat:0 }} units used
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div style="background: var(--bg-main); padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1rem;">
+      <div style="display: flex; justify-content: space-between; font-size: 0.75rem;">
+        <span style="color: var(--text-muted); font-weight: 600;">Total Billed</span>
+        <span style="font-weight: 800;">₹{{ data.total_billed|floatformat:0 }}</span>
+      </div>
+    </div>
+
+    <div class="bill-history">
+      {% for bill in data.recent_bills %}
+      <div class="bill-row">
+        <div>{{ bill.month|date:"M Y" }}</div>
+        <div style="font-weight: 800;">₹{{ bill.bill_amount }}</div>
+        <div style="color: var(--text-muted);">{{ bill.units_consumed }}u</div>
+      </div>
+      {% empty %}
+      <div
+        style="text-align: center; color: var(--text-muted); font-size: 0.7rem; padding: 0.5rem; font-style: italic;">No
+        bills found.</div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Bulk Meter Entry Modal -->
+<div id="bulkBillModal" class="modal-overlay">
+  <div class="card-premium modal-content glass-panel" onclick="event.stopPropagation()"
+    style="max-width: 900px; padding: 2.5rem;">
+    <h2 class="font-luxury text-luxury" style="font-size: 2rem; margin-bottom: 0.5rem;">⚡ Generate Monthly Bills</h2>
+    <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.5rem;">
+      Enter new meter readings for active rooms. <strong>Units = New Reading - Last Reading</strong> • <strong>Price =
+        Units × Rate</strong>
+    </p>
+
+    <div style="margin-bottom: 1.5rem; display: flex; gap: 1rem; align-items: end;">
+      <div class="form-group" style="flex: 1; margin: 0;">
+        <label
+          style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Billing
+          Month</label>
+        <input type="month" id="bulkMonth" class="input" required value="{% now 'Y-m' %}">
+      </div>
+      <div class="form-group" style="flex: 1; margin: 0;">
+        <label style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Rate
+          (₹/unit)</label>
+        <input type="number" id="bulkRate" class="input" value="13" step="0.5" required
+          onchange="recalculateAllPrices()">
+      </div>
+      <div class="form-group" style="flex: 1; margin: 0;">
+        <label style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Filter
+          by Building</label>
+        <select id="buildingFilter" class="input" onchange="filterByBuilding()">
+          <option value="">All Buildings</option>
+          {% regroup bill_stats by building_name as building_groups %}
+          {% for building in building_groups %}
+          <option value="{{ building.grouper }}">{{ building.grouper }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div
+      style="max-height: 400px; overflow-y: auto; margin-bottom: 1.5rem; border: 1px solid var(--border-subtle); border-radius: var(--radius-md);">
+      <table style="width: 100%; border-collapse: collapse;">
+        <thead style="position: sticky; top: 0; background: var(--bg-canvas); z-index: 10;">
+          <tr style="border-bottom: 2px solid var(--border-subtle);">
+            <th
+              style="padding: 0.75rem; text-align: left; font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">
+              Room</th>
+            <th
+              style="padding: 0.75rem; text-align: left; font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">
+              Tenant</th>
+            <th
+              style="padding: 0.75rem; text-align: right; font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">
+              Last Reading</th>
+            <th
+              style="padding: 0.75rem; text-align: right; font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">
+              New Reading</th>
+            <th
+              style="padding: 0.75rem; text-align: right; font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">
+              Units Used</th>
+            <th
+              style="padding: 0.75rem; text-align: right; font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">
+              Bill Amount</th>
+          </tr>
+        </thead>
+        <tbody id="bulkTableBody">
+          {% for data in bill_stats %}
+          {% if data.tenant %}
+          <tr style="border-bottom: 1px solid var(--border-subtle);" data-room-id="{{ data.room.id }}"
+            data-last-reading="{{ data.latest_reading }}" data-room-number="{{ data.room.number }}"
+            data-building="{{ data.building_name }}">
+            <td style="padding: 0.75rem; font-weight: 700;">{{ data.room.number }}</td>
+            <td style="padding: 0.75rem; font-size: 0.875rem;">{{ data.tenant.full_name }}</td>
+            <td style="padding: 0.75rem; text-align: right; font-weight: 600;">{{ data.latest_reading }}</td>
+            <td style="padding: 0.75rem;">
+              <input type="number" class="input bulk-reading-input"
+                style="width: 100px; padding: 0.5rem; text-align: right;" step="0.01" min="{{ data.latest_reading }}"
+                placeholder="{{ data.latest_reading }}" data-room-id="{{ data.room.id }}"
+                onchange="calculateUnits(this)">
+            </td>
+            <td style="padding: 0.75rem; text-align: right; font-weight: 700; color: var(--primary);"
+              class="units-cell">-</td>
+            <td style="padding: 0.75rem; text-align: right; font-weight: 700; color: #10b981;" class="price-cell">-</td>
+          </tr>
+          {% endif %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div style="display: flex; gap: 1rem; justify-content: space-between; align-items: center;">
+      <div style="font-size: 0.875rem; color: var(--text-muted);">
+        <span id="bulkSummary">Enter readings to generate bills</span>
+      </div>
+      <div style="display: flex; gap: 1rem;">
+        <button type="button" onclick="closeBulkModal()" class="btn-premium btn-premium-secondary">Cancel</button>
+        <button type="button" onclick="generateBulkBills()" class="btn-premium btn-premium-primary"
+          id="bulkGenerateBtn">Generate All Bills</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Modal functions
+  function closeModal(e) {
+    if (e.target.id === 'bulkBillModal' || e.target.classList.contains('modal-overlay')) {
+      e.target.style.display = 'none';
+    }
+  }
+
+  function openModal(id) {
+    const modal = document.getElementById(id);
+    if (modal) {
+      modal.style.display = 'flex';
+    }
+  }
+
+  // Bulk Modal Functions
+  function openBulkModal() {
+    document.getElementById('bulkBillModal').style.display = 'flex';
+  }
+
+  function closeBulkModal() {
+    document.getElementById('bulkBillModal').style.display = 'none';
+  }
+
+  function calculateUnits(input) {
+    const row = input.closest('tr');
+    const lastReading = parseFloat(row.dataset.lastReading);
+    const newReading = parseFloat(input.value);
+    const unitsCell = row.querySelector('.units-cell');
+    const priceCell = row.querySelector('.price-cell');
+    const rate = parseFloat(document.getElementById('bulkRate').value) || 13;
+
+    if (newReading && newReading >= lastReading) {
+      const units = newReading - lastReading;
+      const price = units * rate;
+
+      unitsCell.textContent = units.toFixed(2);
+      unitsCell.style.color = 'var(--primary)';
+
+      priceCell.textContent = '₹' + price.toFixed(2);
+      priceCell.style.color = '#10b981';
+
+      updateBulkSummary();
+    } else {
+      unitsCell.textContent = '-';
+      unitsCell.style.color = 'var(--text-muted)';
+      priceCell.textContent = '-';
+      priceCell.style.color = 'var(--text-muted)';
+    }
+  }
+
+  function recalculateAllPrices() {
+    // Recalculate all prices when rate changes
+    const inputs = document.querySelectorAll('.bulk-reading-input');
+    inputs.forEach(input => {
+      if (input.value && parseFloat(input.value) > 0) {
+        calculateUnits(input);
+      }
+    });
+  }
+
+  function filterByBuilding() {
+    const selectedBuilding = document.getElementById('buildingFilter').value;
+    const rows = document.querySelectorAll('#bulkTableBody tr');
+
+    rows.forEach(row => {
+      if (!selectedBuilding || row.dataset.building === selectedBuilding) {
+        row.style.display = '';
+      } else {
+        row.style.display = 'none';
+      }
+    });
+
+    updateBulkSummary();
+  }
+
+  function updateBulkSummary() {
+    const inputs = document.querySelectorAll('.bulk-reading-input');
+    let count = 0;
+    let totalUnits = 0;
+    let totalAmount = 0;
+
+    inputs.forEach(input => {
+      const row = input.closest('tr');
+      // Skip hidden rows (filtered out)
+      if (row.style.display === 'none') return;
+
+      if (input.value && parseFloat(input.value) > 0) {
+        count++;
+        const units = parseFloat(row.querySelector('.units-cell').textContent);
+        if (!isNaN(units)) {
+          totalUnits += units;
+          const priceText = row.querySelector('.price-cell').textContent.replace('₹', '');
+          const price = parseFloat(priceText);
+          if (!isNaN(price)) {
+            totalAmount += price;
+          }
+        }
+      }
+    });
+
+    const summary = document.getElementById('bulkSummary');
+
+    if (count > 0) {
+      summary.innerHTML = `<strong>${count} rooms</strong> • ${totalUnits.toFixed(2)} units • <strong>₹${totalAmount.toFixed(2)}</strong> total`;
+    } else {
+      summary.textContent = 'Enter readings to generate bills';
+    }
+  }
+
+  async function generateBulkBills() {
+    const month = document.getElementById('bulkMonth').value;
+    const rate = parseFloat(document.getElementById('bulkRate').value);
+    const inputs = document.querySelectorAll('.bulk-reading-input');
+
+    if (!month) {
+      alert('Please select a billing month');
+      return;
+    }
+
+    // Collect all readings
+    const readings = [];
+    inputs.forEach(input => {
+      if (input.value && parseFloat(input.value) > 0) {
+        const row = input.closest('tr');
+        const roomId = input.dataset.roomId;
+        const lastReading = parseFloat(row.dataset.lastReading);
+        const newReading = parseFloat(input.value);
+
+        if (newReading >= lastReading) {
+          readings.push({
+            room_id: roomId,
+            starting_reading: lastReading,
+            ending_reading: newReading
+          });
+        }
+      }
+    });
+
+    if (readings.length === 0) {
+      alert('Please enter at least one meter reading');
+      return;
+    }
+
+    const btn = document.getElementById('bulkGenerateBtn');
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Generating...';
+
+    try {
+      const formData = new FormData();
+      formData.append('month', month);
+      formData.append('rate_per_unit', rate);
+      formData.append('readings', JSON.stringify(readings));
+      formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+      const res = await fetch('{% url "bulk_create_electricity_bills" %}', {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        alert(`✓ Successfully generated ${data.created_count} electricity bills!`);
+        location.reload();
+      } else {
+        alert('Error: ' + data.message);
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
+    } catch (error) {
+      alert('Error: ' + error.message);
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  }
+</script>
+{% endblock %}

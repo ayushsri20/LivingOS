@@ -1,0 +1,1692 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Rental Ledger - Panesar PG{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* Analytics Dashboard Styling */
+  .analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .analytics-card {
+    padding: 1.75rem;
+    background: linear-gradient(135deg, var(--bg-canvas) 0%, var(--bg-main) 100%);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .analytics-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary), var(--accent));
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s ease;
+  }
+
+  .analytics-card:hover::before {
+    transform: scaleX(1);
+  }
+
+  .analytics-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+    border-color: var(--primary);
+  }
+
+  .analytics-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(59, 130, 246, 0.1));
+  }
+
+  .analytics-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+  }
+
+  .analytics-value {
+    font-size: 2rem;
+    font-weight: 900;
+    color: var(--text-main);
+    line-height: 1;
+    margin-bottom: 0.5rem;
+  }
+
+  .analytics-subtitle {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .analytics-trend {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+    margin-top: 0.5rem;
+  }
+
+  .trend-up {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+  }
+
+  .trend-down {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+  }
+
+  /* Filter Controls */
+  .filter-section {
+    background: var(--bg-canvas);
+    padding: 1.5rem;
+    border-radius: var(--radius-lg);
+    margin-bottom: 2rem;
+    border: 1px solid var(--border-subtle);
+  }
+
+  .filter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .filter-input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    background: var(--bg-main);
+    color: var(--text-main);
+    transition: all 0.2s ease;
+  }
+
+  .filter-tag {
+    display: inline-block;
+    padding: 0.375rem 0.75rem;
+    background: var(--primary);
+    color: white;
+    border-radius: 1rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .filter-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+  }
+
+  .search-box {
+    position: relative;
+    margin-bottom: 1rem;
+  }
+
+  .search-box input {
+    padding-left: 2.5rem;
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 0.875rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 1rem;
+  }
+
+  /* Enhanced Payment Cards */
+  .ledger-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .ledger-card {
+    padding: 0;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .ledger-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+  }
+
+  .ledger-header {
+    padding: 1.5rem;
+    border-bottom: 2px solid var(--border-subtle);
+    background: linear-gradient(135deg, var(--bg-canvas), var(--bg-main));
+  }
+
+  .tenant-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+    background: var(--bg-main);
+    border-radius: var(--radius-md);
+  }
+
+  .tenant-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 800;
+    font-size: 1rem;
+  }
+
+  .tenant-details {
+    flex: 1;
+  }
+
+  .tenant-name {
+    font-weight: 700;
+    font-size: 0.875rem;
+    color: var(--text-main);
+  }
+
+  .tenant-contact {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
+  .payment-progress {
+    margin: 1rem 0;
+  }
+
+  .progress-bar-container {
+    height: 8px;
+    background: var(--bg-main);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #10b981, #059669);
+    border-radius: 999px;
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    animation: shimmer 2s infinite;
+  }
+
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  .progress-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+
+  .payment-history {
+    max-height: 280px;
+    overflow-y: auto;
+    padding: 1rem;
+    background: var(--bg-main);
+  }
+
+  .payment-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.875rem;
+    border-radius: var(--radius-md);
+    background: var(--bg-canvas);
+    margin-bottom: 0.5rem;
+    border: 1px solid var(--border-subtle);
+    transition: all 0.2s ease;
+  }
+
+  .payment-row:hover {
+    border-color: var(--primary);
+    transform: translateX(4px);
+  }
+
+  .payment-method-icon {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    background: rgba(139, 92, 246, 0.1);
+    border-radius: var(--radius-sm);
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--primary);
+  }
+
+  .quick-actions {
+    display: flex;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: var(--bg-canvas);
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .quick-action-btn {
+    flex: 1;
+    padding: 0.625rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-subtle);
+    background: var(--bg-main);
+    color: var(--text-main);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .quick-action-btn:hover {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+    transform: translateY(-2px);
+  }
+
+  /* Modal Styling */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(12px);
+    z-index: 2000;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+    animation: fadeIn 0.2s ease;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
+  .modal-content {
+    width: 100%;
+    max-width: 540px;
+    padding: 2.5rem;
+    animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .input {
+    width: 100%;
+    padding: 0.875rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    background: var(--bg-main);
+    color: var(--text-main);
+    transition: all 0.2s ease;
+  }
+
+  .input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+  }
+
+  /* Status badges */
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .status-pending {
+    background: rgba(251, 191, 36, 0.15);
+    color: #f59e0b;
+  }
+
+  .status-partial {
+    background: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+  }
+
+  .status-paid {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+  }
+
+  .status-overdue {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .ledger-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .analytics-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .filter-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 5rem 2rem;
+    grid-column: 1/-1;
+  }
+
+  .empty-icon {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+    opacity: 0.5;
+  }
+
+  /* Toast notifications */
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    padding: 1rem 1.5rem;
+    background: var(--bg-canvas);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    z-index: 3000;
+    animation: slideInRight 0.3s ease;
+    display: none;
+  }
+
+  @keyframes slideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(100%);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .toast.success {
+    border-left: 4px solid #10b981;
+  }
+
+  .toast.error {
+    border-left: 4px solid #ef4444;
+  }
+
+  /* View Toggle & Table Styles */
+  .view-toggle {
+    display: inline-flex;
+    background: var(--bg-main);
+    padding: 0.25rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-subtle);
+  }
+
+  .view-btn {
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-sm);
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  .view-btn.active {
+    background: var(--bg-canvas);
+    color: var(--primary);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .ledger-table-container {
+    display: none;
+    /* Hidden by default */
+    background: var(--bg-main);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-subtle);
+    overflow: hidden;
+  }
+
+  .ledger-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+  }
+
+  .ledger-table th {
+    background: var(--bg-canvas);
+    text-align: left;
+    padding: 1rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.75rem;
+    border-bottom: 2px solid var(--border-subtle);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .ledger-table td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-subtle);
+    color: var(--text-main);
+    vertical-align: middle;
+  }
+
+  .ledger-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .ledger-table tr:hover td {
+    background: var(--bg-canvas);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<header class="card-premium glass-panel" style="margin-bottom: 2.5rem; padding: 2.5rem;">
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <h1 class="font-luxury text-luxury" style="font-size: 2.5rem;">💎 Rental Ledger</h1>
+      <p style="color: var(--text-muted); font-weight: 500;">Advanced financial tracking and payment analytics</p>
+    </div>
+    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+      <button onclick="openModal('addPaymentModal')" class="btn-premium btn-premium-primary">
+        ➕ Record Payment
+      </button>
+
+      <div class="view-toggle">
+        <button class="view-btn active" onclick="switchView('grid')" id="btn-grid">
+          📱 Grid
+        </button>
+        <button class="view-btn" onclick="switchView('list')" id="btn-list">
+          📋 List
+        </button>
+      </div>
+
+      <button onclick="exportData('csv')" class="btn-premium btn-premium-secondary">
+        📊 Export CSV
+      </button>
+      <a href="{% url 'dashboard' %}" class="btn-premium btn-premium-secondary">← Dashboard</a>
+    </div>
+  </div>
+</header>
+
+<!-- Analytics Dashboard -->
+<div class="analytics-grid">
+  <div class="analytics-card">
+    <div class="analytics-icon">💰</div>
+    <div class="analytics-label">Current Month Revenue</div>
+    <div class="analytics-value">₹{{ analytics.current_month_revenue|floatformat:0 }}</div>
+    <div class="analytics-subtitle">of ₹{{ analytics.current_month_expected|floatformat:0 }} expected</div>
+  </div>
+
+  <div class="analytics-card">
+    <div class="analytics-icon">📈</div>
+    <div class="analytics-label">Collection Rate</div>
+    <div class="analytics-value">{{ analytics.collection_rate }}%</div>
+    <div class="analytics-subtitle">Overall performance</div>
+  </div>
+
+  <div class="analytics-card">
+    <div class="analytics-icon">⏳</div>
+    <div class="analytics-label">Total Pending</div>
+    <div class="analytics-value">₹{{ analytics.total_pending|floatformat:0 }}</div>
+    <div class="analytics-subtitle">{{ status_distribution.pending|add:status_distribution.partial }} payments pending
+    </div>
+  </div>
+
+  <div class="analytics-card">
+    <div class="analytics-icon">⚠️</div>
+    <div class="analytics-label">Overdue Payments</div>
+    <div class="analytics-value">{{ analytics.overdue_count }}</div>
+    <div class="analytics-subtitle">₹{{ analytics.overdue_amount|floatformat:0 }} overdue</div>
+  </div>
+</div>
+
+<!-- Filter Section -->
+<div class="filter-section">
+  <div class="search-box">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="searchInput" class="filter-input" placeholder="Search by room number or tenant name..."
+      onkeyup="filterPayments()">
+  </div>
+
+  <form method="GET" id="filterForm">
+    <div class="filter-grid">
+      <select name="status" class="filter-input" onchange="this.form.submit()">
+        <option value="all" {% if current_filters.status == 'all' %}selected{% endif %}>All Status</option>
+        <option value="pending" {% if current_filters.status == 'pending' %}selected{% endif %}>Pending</option>
+        <option value="partial" {% if current_filters.status == 'partial' %}selected{% endif %}>Partial</option>
+        <option value="paid" {% if current_filters.status == 'paid' %}selected{% endif %}>Paid</option>
+        <option value="overdue" {% if current_filters.status == 'overdue' %}selected{% endif %}>Overdue</option>
+      </select>
+
+      <input type="month" name="month" class="filter-input" value="{{ current_filters.month }}"
+        onchange="this.form.submit()" placeholder="Filter by month">
+
+      <select name="building" class="filter-input" onchange="this.form.submit()">
+        <option value="">All Buildings</option>
+        {% for building in buildings %}
+        <option value="{{ building }}" {% if current_filters.building == building %}selected{% endif %}>Building {{
+          building }}</option>
+        {% endfor %}
+      </select>
+
+      <input type="text" name="room" class="filter-input" value="{{ current_filters.room }}" placeholder="Room number"
+        onchange="this.form.submit()">
+
+      <button type="button" class="btn-secondary" onclick="clearFilters()"
+        style="padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 600; cursor: pointer; border: 2px solid var(--border); background: white; color: var(--text);">
+        Clear Filters
+      </button>
+    </div>
+  </form>
+
+  <!-- Filter Summary -->
+  {% if current_filters.status != 'all' or current_filters.month or current_filters.room or current_filters.building %}
+  <div
+    style="margin-top: 1rem; padding: 0.75rem 1rem; background: #f0f9ff; border-left: 4px solid var(--primary); border-radius: 0.5rem;">
+    <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+      <span style="font-weight: 700; color: var(--text);">Active Filters:</span>
+      {% if current_filters.status != 'all' %}
+      <span class="filter-tag">Status: {{ current_filters.status|title }}</span>
+      {% endif %}
+      {% if current_filters.month %}
+      <span class="filter-tag">Month: {{ current_filters.month }}</span>
+      {% endif %}
+      {% if current_filters.building %}
+      <span class="filter-tag">Building: {{ current_filters.building }}</span>
+      {% endif %}
+      {% if current_filters.room %}
+      <span class="filter-tag">Room: {{ current_filters.room }}</span>
+      {% endif %}
+      <span style="margin-left: auto; font-weight: 600; color: var(--primary);">
+        {{ monthly_payments|length }} result{{ monthly_payments|length|pluralize }}
+      </span>
+    </div>
+  </div>
+  {% else %}
+  <div
+    style="margin-top: 1rem; padding: 0.75rem 1rem; background: #f0fdf4; border-left: 4px solid #10b981; border-radius: 0.5rem;">
+    <span style="font-weight: 600; color: #065f46;">
+      Showing {{ monthly_payments|length }} payment{{ monthly_payments|length|pluralize }} for current month
+    </span>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Payment Cards Grid -->
+<div class="ledger-grid" id="paymentsGrid">
+  {% for payment in monthly_payments %}
+  <div class="card-premium ledger-card" data-room="{{ payment.room.number }}"
+    data-status="{{ payment.payment_status }}">
+    <div class="ledger-header">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+        <div>
+          <h3 class="font-luxury" style="font-size: 1.5rem; color: var(--primary);">Room {{ payment.room.number }}</h3>
+          <p style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700;">{{ payment.month|date:"F Y" }}
+            Cycle</p>
+        </div>
+        <span class="status-badge status-{{ payment.payment_status }}">
+          {% if payment.payment_status == 'paid' %}✓ Paid{% elif payment.payment_status == 'partial' %}⏳ Partial{% elif
+          payment.payment_status == 'overdue' %}⚠️ Overdue{% else %}○ Pending{% endif %}
+        </span>
+      </div>
+
+      {% if payment.guest %}
+      <div class="tenant-info">
+        <div class="tenant-avatar">{{ payment.guest.first_name|first }}{{ payment.guest.last_name|first }}</div>
+        <div class="tenant-details">
+          <div class="tenant-name">{{ payment.guest.full_name }}</div>
+          <div class="tenant-contact">📞 {{ payment.guest.phone|default:"N/A" }}</div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <div style="padding: 1.5rem;">
+      <!-- Payment Progress -->
+      <div class="payment-progress">
+        {% widthratio payment.paid_amount payment.get_total_amount_due 100 as progress_percent %}
+        <div class="progress-bar-container">
+          <div class="progress-bar-fill" style="width: {{ progress_percent|default:0 }}%"></div>
+        </div>
+        <div class="progress-labels">
+          <span>Paid: ₹{{ payment.paid_amount }}</span>
+          <span>{{ progress_percent }}%</span>
+        </div>
+      </div>
+
+      <!-- Amount Breakdown -->
+      <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem;">
+        <div
+          style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: var(--bg-main); border-radius: var(--radius-md);">
+          <div style="color: var(--text-muted); font-size: 0.75rem; font-weight: 600;">RENT</div>
+          <div style="font-weight: 700; color: var(--text-main);">₹{{ payment.rent_amount }}</div>
+        </div>
+        {% if payment.get_electricity_amount > 0 %}
+        <div
+          style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: rgba(245, 158, 11, 0.1); border-radius: var(--radius-md);">
+          <div style="color: var(--text-muted); font-size: 0.75rem; font-weight: 600;">⚡ ELECTRICITY</div>
+          <div style="font-weight: 700; color: #f59e0b;">₹{{ payment.get_electricity_amount }}</div>
+        </div>
+        {% endif %}
+        <div
+          style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; border-top: 2px solid var(--border-subtle); background: linear-gradient(135deg, rgba(139, 92, 246, 0.05), rgba(59, 130, 246, 0.05)); border-radius: var(--radius-md);">
+          <div style="color: var(--text-main); font-size: 0.875rem; font-weight: 800;">TOTAL DUE</div>
+          <div style="font-weight: 900; color: var(--primary); font-size: 1.25rem;">₹{{ payment.get_total_amount_due }}
+          </div>
+        </div>
+      </div>
+
+      <div style="background: var(--bg-main); padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1rem;">
+        <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 0.5rem;">
+          <span style="color: var(--text-muted); font-weight: 600;">Paid</span>
+          <span style="font-weight: 800; color: #10b981;">₹{{ payment.paid_amount }}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.75rem;">
+          <span style="color: var(--text-muted); font-weight: 600;">Remaining</span>
+          <span style="font-weight: 800; color: #ef4444;">₹{{ payment.get_total_remaining }}</span>
+        </div>
+      </div>
+
+      <!-- Payment History -->
+      <div class="payment-history">
+        <div
+          style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.75rem; letter-spacing: 0.5px;">
+          Payment History</div>
+        {% for record in payment.paymentrecord_set.all %}
+        <div class="payment-row">
+          <div>
+            <div style="font-weight: 800; font-size: 0.875rem;">₹{{ record.payment_amount }}</div>
+            <div style="font-size: 0.65rem; color: var(--text-muted); margin-top: 0.25rem;">
+              📅 {{ record.payment_date|date:"d M, Y" }}
+            </div>
+            <span class="payment-method-icon">{{ record.get_payment_method_display }}</span>
+          </div>
+          <div style="display: flex; gap: 0.5rem;">
+            <button class="btn-premium btn-premium-secondary edit-record-btn" data-id="{{ record.id }}"
+              data-amount="{{ record.payment_amount }}" data-date="{{ record.payment_date|date:'Y-m-d' }}"
+              data-method="{{ record.payment_method }}" data-notes="{{ record.notes }}"
+              style="padding: 0.375rem 0.75rem; font-size: 0.7rem;">
+              ✏️
+            </button>
+            <button onclick="deleteRecord('{{ record.id }}')" class="btn-premium btn-premium-secondary"
+              style="padding: 0.375rem 0.75rem; font-size: 0.7rem; border-color: var(--danger); color: var(--danger);">
+              🗑️
+            </button>
+          </div>
+        </div>
+        {% empty %}
+        <div
+          style="text-align: center; color: var(--text-muted); font-size: 0.75rem; padding: 1.5rem; font-style: italic;">
+          No payments recorded yet
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+      <button class="quick-action-btn"
+        onclick="openPaymentModal('{{ payment.id }}', '{{ payment.room.number }}', '{{ payment.get_total_remaining }}')">
+        📝 Record Payment
+      </button>
+      <button class="quick-action-btn" onclick="viewDetails('{{ payment.id }}')">
+        <button class="quick-action-btn"
+          onclick="openGenerateBillModal('{{ payment.room.id }}', '{{ payment.room.number }}', '{{ payment.month|date:'Y-m-d' }}')">
+          ⚡ Generate Bill
+        </button>
+        📊 View History
+      </button>
+    </div>
+  </div>
+  {% empty %}
+  <div class="card-premium glass-panel empty-state">
+    <div class="empty-icon">💎</div>
+    <h3 class="font-luxury" style="color: var(--primary); font-size: 1.5rem;">All Clear!</h3>
+    <p style="color: var(--text-muted); font-weight: 500;">No pending or partial payments found.</p>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Table View -->
+<div class="ledger-table-container glass-panel" id="paymentsTable">
+  <table class="ledger-table">
+    <thead>
+      <tr>
+        <th>Room</th>
+        <th>Tenant</th>
+        <th>Month</th>
+        <th>Status</th>
+        <th>Rent</th>
+        <th>Utilities</th>
+        <th>Total Due</th>
+        <th>Paid</th>
+        <th>Remaining</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for payment in monthly_payments %}
+      <tr class="payment-row-table" data-room="{{ payment.room.number }}" data-status="{{ payment.payment_status }}">
+        <td style="font-weight: 700; color: var(--primary);">{{ payment.room.number }}</td>
+        <td>
+          {% if payment.guest %}
+          <div style="font-weight: 600;">{{ payment.guest.full_name }}</div>
+          <div style="font-size: 0.7rem; color: var(--text-muted);">{{ payment.guest.phone }}</div>
+          {% else %}
+          <span style="color: var(--text-muted); font-style: italic;">No Tenant</span>
+          {% endif %}
+        </td>
+        <td style="white-space: nowrap;">{{ payment.month|date:"M Y" }}</td>
+        <td>
+          <span class="status-badge status-{{ payment.payment_status }}"
+            style="font-size: 0.65rem; padding: 0.25rem 0.5rem;">
+            {% if payment.payment_status == 'paid' %}✓ Paid{% elif payment.payment_status == 'partial' %}⏳ Partial{%
+            elif payment.payment_status == 'overdue' %}⚠️ Overdue{% else %}○ Pending{% endif %}
+          </span>
+        </td>
+        <td>₹{{ payment.rent_amount }}</td>
+        <td>
+          {% if payment.get_electricity_amount > 0 %}
+          <span style="color: #f59e0b;">₹{{ payment.get_electricity_amount }}</span>
+          {% else %}
+          <span style="color: var(--text-muted);">-</span>
+          {% endif %}
+        </td>
+        <td style="font-weight: 700;">₹{{ payment.get_total_amount_due }}</td>
+        <td style="font-weight: 700; color: #10b981;">₹{{ payment.paid_amount }}</td>
+        <td style="font-weight: 700; color: #ef4444;">₹{{ payment.get_total_remaining }}</td>
+        <td>
+          <div style="display: flex; gap: 0.5rem;">
+            <button
+              onclick="openPaymentModal('{{ payment.id }}', '{{ payment.room.number }}', '{{ payment.get_total_remaining }}')"
+              class="btn-premium btn-premium-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;"
+              title="Record Payment">
+              ➕
+            </button>
+            <button onclick="viewDetails('{{ payment.id }}')" class="btn-premium btn-premium-secondary"
+              style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" title="View History">
+              📊
+            </button>
+          </div>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="10" style="text-align: center; padding: 3rem; color: var(--text-muted);">
+          No payments found for this criteria.
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Add Payment Modal -->
+<div id="addPaymentModal" class="modal-overlay" onclick="closeModal(event)">
+  <div class="card-premium modal-content glass-panel" onclick="event.stopPropagation()">
+    <h2 class="font-luxury text-luxury" style="font-size: 2rem; margin-bottom: 1rem;">📝 Record Payment Received</h2>
+    <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.5rem; font-weight: 500;">Document payment
+      made by tenant</p>
+    <form id="paymentForm">
+      {% csrf_token %}
+      <div class="form-group" style="margin-bottom: 1.25rem;">
+        <label
+          style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 0.5rem;">Select
+          Month</label>
+        <select id="monthSelector" class="input" onchange="loadPaymentsForMonth()" required>
+          {% for month_option in month_options %}
+          <option value="{{ month_option.value }}" {% if month_option.is_current %}selected{% endif %}>
+            {{ month_option.label }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom: 1.25rem;">
+        <label
+          style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 0.5rem;">Room
+          & Tenant</label>
+        <input type="text" id="tenantSearch" class="input" placeholder="Type to search tenant..."
+          style="margin-bottom: 0.5rem; font-size: 0.8rem; padding: 0.5rem;" onkeyup="filterTenantOptions()">
+        <select name="payment_id" id="formPaymentId" class="input" required>
+          <option value="">Loading...</option>
+        </select>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+        <div class="form-group">
+          <label
+            style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 0.5rem;">Amount
+            Paid (₹)</label>
+          <input type="number" name="payment_amount" class="input" required>
+        </div>
+        <div class="form-group">
+          <label
+            style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 0.5rem;">Payment
+            Date <span
+              style="font-size: 0.65rem; font-weight: 600; color: var(--text-muted); text-transform: none;">(When tenant
+              paid)</span></label>
+          <input type="date" name="payment_date" class="input" value="{% now 'Y-m-d' %}" required>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom: 2rem;">
+        <label
+          style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 0.5rem;">Payment
+          Method</label>
+        <select name="payment_method" class="input">
+          <option value="cash">💵 Cash</option>
+          <option value="upi">📱 UPI / Online</option>
+          <option value="bank_transfer">🏦 Bank Transfer</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom: 1.25rem;">
+        <label
+          style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 0.5rem;">Reference
+          Number <span
+            style="font-size: 0.65rem; font-weight: 600; color: var(--text-muted); text-transform: none;">(Optional -
+            for UPI/Bank transfers)</span></label>
+        <input type="text" name="reference_number" class="input" placeholder="Transaction ID or Check number">
+      </div>
+      <div class="form-group" style="margin-bottom: 1.25rem;">
+        <label
+          style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 0.5rem;">Notes
+          <span
+            style="font-size: 0.65rem; font-weight: 600; color: var(--text-muted); text-transform: none;">(Optional)</span></label>
+        <textarea name="notes" class="input" rows="2" placeholder="Additional remarks or details..."></textarea>
+      </div>
+      <div class="form-group" style="margin-bottom: 2rem;">
+        <label
+          style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 0.5rem;">Recorded
+          By (Manager)</label>
+        <input type="text" class="input" value="{{ request.user.get_full_name|default:request.user.username }}" readonly
+          style="background: var(--bg-canvas); cursor: not-allowed;">
+      </div>
+      <div style="display: flex; gap: 1rem;">
+        <button type="submit" class="btn-premium btn-premium-primary" style="flex: 2;">✓ Save Payment Record</button>
+        <button type="button" onclick="document.getElementById('addPaymentModal').style.display='none'"
+          class="btn-premium btn-premium-secondary" style="flex: 1;">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Generate Electricity Bill Modal -->
+<div id="generateBillModal" class="modal-overlay" onclick="closeModal(event)">
+  <div class="card-premium modal-content glass-panel" onclick="event.stopPropagation()">
+    <h2 class="font-luxury text-luxury" style="font-size: 2rem; margin-bottom: 1rem;">⚡ Generate Electricity Bill</h2>
+    <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.5rem; font-weight: 500;">Create
+      electricity bill for room</p>
+    <form id="generateBillForm">
+      {% csrf_token %}
+      <input type="hidden" id="billRoomId" name="room_id">
+
+      <div class="form-group" style="margin-bottom: 1.25rem;">
+        <label
+          style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 0.5rem;">Room
+          Number</label>
+        <input type="text" id="billRoomNumber" class="input" readonly
+          style="background: var(--bg-canvas); cursor: not-allowed;">
+      </div>
+
+      <div class="form-group" style="margin-bottom: 1.25rem;">
+        <label
+          style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 0.5rem;">Billing
+          Month</label>
+        <input type="month" id="billMonth" name="month" class="input" required>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+        <div class="form-group">
+          <label
+            style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 0.5rem;">Previous
+            Reading</label>
+          <input type="number" id="billPreviousReading" name="starting_reading" class="input" readonly
+            style="background: var(--bg-canvas); cursor: not-allowed;">
+        </div>
+        <div class="form-group">
+          <label
+            style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 0.5rem;">Current
+            Reading</label>
+          <input type="number" id="billEndingReading" name="ending_reading" class="input" step="0.01" required
+            oninput="calculateBillPreview()">
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+        <div class="form-group">
+          <label
+            style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 0.5rem;">Rate
+            per Unit (₹)</label>
+          <input type="number" id="billRatePerUnit" name="rate_per_unit" class="input" value="8" step="0.01" required
+            oninput="calculateBillPreview()">
+        </div>
+        <div class="form-group">
+          <label
+            style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 0.5rem;">Units
+            Consumed</label>
+          <input type="number" id="billUnitsConsumed" class="input" readonly
+            style="background: var(--bg-canvas); cursor: not-allowed;">
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 2rem;">
+        <label
+          style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 0.5rem;">Bill
+          Amount</label>
+        <input type="text" id="billAmount" class="input" readonly
+          style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(59, 130, 246, 0.1)); cursor: not-allowed; font-weight: 900; font-size: 1.25rem; color: var(--primary);">
+      </div>
+
+      <div style="display: flex; gap: 1rem;">
+        <button type="submit" class="btn-premium btn-premium-primary" style="flex: 2;">⚡ Generate Bill</button>
+        <button type="button" onclick="document.getElementById('generateBillModal').style.display='none'"
+          class="btn-premium btn-premium-secondary" style="flex: 1;">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Edit Payment Modal -->
+<div id="editPaymentModal" class="modal-overlay" onclick="closeModal(event)">
+  <div class="card-premium modal-content glass-panel" onclick="event.stopPropagation()">
+    <h2 class="font-luxury text-luxury" style="font-size: 2rem; margin-bottom: 1rem;">✏️ Edit Payment Record</h2>
+    <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.5rem; font-weight: 500;">Correct payment
+      record details</p>
+    <form id="editPaymentForm">
+      {% csrf_token %}
+      <input type="hidden" id="editRecordId" name="record_id">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+        <div class="form-group">
+          <label
+            style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 0.5rem;">Amount
+            Paid (₹)</label>
+          <input type="number" id="editAmount" name="payment_amount" class="input" required>
+        </div>
+        <div class="form-group">
+          <label
+            style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 0.5rem;">Payment
+            Date</label>
+          <input type="date" id="editDate" name="payment_date" class="input" required>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom: 1.25rem;">
+        <label
+          style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 0.5rem;">Payment
+          Method</label>
+        <select id="editMethod" name="payment_method" class="input">
+          <option value="cash">💵 Cash</option>
+          <option value="upi">📱 UPI / Online</option>
+          <option value="bank_transfer">🏦 Bank Transfer</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom: 1.25rem;">
+        <label
+          style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 0.5rem;">Reference
+          Number</label>
+        <input type="text" id="editReference" name="reference_number" class="input"
+          placeholder="Transaction ID or Check number">
+      </div>
+      <div class="form-group" style="margin-bottom: 2rem;">
+        <label
+          style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 0.5rem;">Notes</label>
+        <textarea id="editNotes" name="notes" class="input" style="height: 80px; resize: none;"></textarea>
+      </div>
+      <div style="display: flex; gap: 1rem;">
+        <button type="submit" class="btn-premium btn-premium-primary" style="flex: 2;">✓ Save Changes</button>
+        <button type="button" onclick="document.getElementById('editPaymentModal').style.display='none'"
+          class="btn-premium btn-premium-secondary" style="flex: 1;">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Payment History Modal -->
+<div id="paymentHistoryModal" class="modal-overlay" onclick="closeModal(event)" style="display: none;">
+  <div class="card-premium modal-content glass-panel" onclick="event.stopPropagation()"
+    style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+      <h2 class="font-luxury text-luxury" style="font-size: 2rem; margin: 0;">📊 Payment History</h2>
+      <button onclick="document.getElementById('paymentHistoryModal').style.display='none'"
+        class="btn-premium btn-premium-secondary" style="padding: 0.5rem 1rem;">✕ Close</button>
+    </div>
+    <div id="paymentHistoryContent">
+      <!-- Content will be populated by JavaScript -->
+    </div>
+  </div>
+</div>
+
+<!-- Toast Notification -->
+<div id="toast" class="toast"></div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Modal functions
+  function closeModal(e) {
+    if (e.target.classList.contains('modal-overlay')) {
+      e.target.style.display = 'none';
+    }
+  }
+
+  function openModal(id) {
+    document.getElementById(id).style.display = 'flex';
+  }
+
+  function openPaymentModal(paymentId, roomNumber, remaining) {
+    const modal = document.getElementById('addPaymentModal');
+    const select = document.getElementById('formPaymentId');
+    select.value = paymentId;
+    modal.style.display = 'flex';
+  }
+
+  // Toast notification
+  function showToast(message, type = 'success') {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.className = `toast ${type}`;
+    toast.style.display = 'block';
+    setTimeout(() => {
+      toast.style.display = 'none';
+    }, 3000);
+  }
+
+  // Store payments data globally for filtering
+  window.currentMonthPayments = [];
+
+  // Load payments for selected month
+  function loadPaymentsForMonth() {
+    const monthSelector = document.getElementById('monthSelector');
+    const paymentSelector = document.getElementById('formPaymentId');
+    let selectedMonth = monthSelector.value;
+    const amountInput = document.querySelector('input[name="payment_amount"]');
+
+    // If no month selected or selector is empty, use current month
+    if (!selectedMonth) {
+      const now = new Date();
+      selectedMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+    } else if (selectedMonth.length === 7) {
+      // Convert YYYY-MM to YYYY-MM-DD format for API
+      selectedMonth += '-01';
+    }
+
+    // Clear current state
+    paymentSelector.innerHTML = '<option value="">Loading...</option>';
+    amountInput.value = '';
+    const searchInput = document.getElementById('tenantSearch');
+    if (searchInput) searchInput.value = ''; // Clear search
+
+    // Fetch payments for selected month
+    fetch(`/api/payments/by-month/?month=${selectedMonth}`)
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          window.currentMonthPayments = data.payments; // Store for search
+          renderTenantOptions(data.payments);
+        } else {
+          paymentSelector.innerHTML = '<option value="">Error loading rooms</option>';
+          showToast(data.message || 'Error loading payments', 'error');
+        }
+      })
+      .catch(error => {
+        console.error('Error loading payments:', error);
+        paymentSelector.innerHTML = '<option value="">Error loading rooms</option>';
+        showToast('Error loading payments', 'error');
+      });
+  }
+
+  // Render options into the select box
+  function renderTenantOptions(payments) {
+    const paymentSelector = document.getElementById('formPaymentId');
+    paymentSelector.innerHTML = '<option value="">Select Room / Tenant...</option>';
+
+    if (payments.length === 0) {
+      paymentSelector.innerHTML = '<option value="">No payments found</option>';
+      return;
+    }
+
+    payments.forEach(payment => {
+      const option = document.createElement('option');
+      option.value = payment.id;
+      option.dataset.remaining = payment.remaining;
+
+      const statusIcon = payment.status === 'paid' ? '✓' :
+        payment.status === 'partial' ? '⏳' :
+          payment.status === 'overdue' ? '⚠️' : '○';
+
+      option.textContent = `${statusIcon} Room ${payment.room_number} - ${payment.tenant_name} (₹${payment.remaining})`;
+
+      if (payment.status === 'paid') {
+        option.disabled = true;
+        option.textContent += ' - PAID';
+      }
+      paymentSelector.appendChild(option);
+    });
+  }
+
+  // Filter options based on search input
+  function filterTenantOptions() {
+    const searchTerm = document.getElementById('tenantSearch').value.toLowerCase();
+
+    if (!searchTerm) {
+      renderTenantOptions(window.currentMonthPayments);
+      return;
+    }
+
+    const filtered = window.currentMonthPayments.filter(p => {
+      return p.room_number.toLowerCase().includes(searchTerm) ||
+        p.tenant_name.toLowerCase().includes(searchTerm);
+    });
+
+    renderTenantOptions(filtered);
+  }
+
+  // Auto-fill amount when room is selected
+  function attachFormListeners() {
+    const formPaymentIdElement = document.getElementById('formPaymentId');
+    if (!formPaymentIdElement) {
+      console.error('formPaymentId element not found');
+      return;
+    }
+
+    formPaymentIdElement.addEventListener('change', function () {
+      const selectedOption = this.options[this.selectedIndex];
+      const amountInput = document.querySelector('input[name="payment_amount"]');
+
+      if (selectedOption && selectedOption.dataset.remaining) {
+        // Auto-fill the exact remaining amount
+        amountInput.value = selectedOption.dataset.remaining;
+
+        // Flash the input to indicate auto-fill
+        amountInput.style.transition = 'background-color 0.3s';
+        amountInput.style.backgroundColor = 'rgba(16, 185, 129, 0.1)'; // Light green
+        setTimeout(() => {
+          amountInput.style.backgroundColor = '';
+        }, 500);
+
+        // Update helper text if it exists (or create it)
+        let helper = document.getElementById('amountHelper');
+        if (!helper) {
+          helper = document.createElement('div');
+          helper.id = 'amountHelper';
+          helper.style.fontSize = '0.75rem';
+          helper.style.color = 'var(--text-muted)';
+          helper.style.marginTop = '0.25rem';
+          amountInput.parentNode.appendChild(helper);
+        }
+        helper.innerHTML = `Remaining Balance: <strong style="color: var(--primary)">₹${selectedOption.dataset.remaining}</strong>`;
+      } else {
+        amountInput.value = '';
+        const helper = document.getElementById('amountHelper');
+        if (helper) helper.innerHTML = '';
+      }
+    });
+  }
+
+  // Initialize month selector with current month if empty
+  function initializeMonthSelector() {
+    const monthSelector = document.getElementById('monthSelector');
+    if (!monthSelector) return;
+
+    // If selector is empty, add current month as default option
+    if (monthSelector.options.length === 0) {
+      const now = new Date();
+      const monthValue = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+      const monthLabel = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+      const option = document.createElement('option');
+      option.value = monthValue;
+      option.textContent = monthLabel;
+      option.selected = true;
+      monthSelector.appendChild(option);
+    }
+  }
+
+  // Load current month's payments on page load
+  document.addEventListener('DOMContentLoaded', function () {
+    initializeMonthSelector();
+    loadPaymentsForMonth();
+    attachFormListeners();
+    const savedView = localStorage.getItem('ledgerView') || 'grid';
+    switchView(savedView);
+  });
+
+  // Payment form submission
+  document.getElementById('paymentForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const res = await fetch('{% url "record_payment" %}', {
+      method: 'POST',
+      body: new FormData(e.target)
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast(data.message, 'success');
+      setTimeout(() => location.reload(), 1500);
+    } else {
+      showToast(data.message || 'Error recording payment', 'error');
+    }
+  };
+
+  // Edit record button handler
+  document.addEventListener('click', e => {
+    if (e.target.classList.contains('edit-record-btn')) {
+      const b = e.target.dataset;
+      document.getElementById('editRecordId').value = b.id;
+      document.getElementById('editAmount').value = b.amount;
+      document.getElementById('editDate').value = b.date;
+      document.getElementById('editMethod').value = b.method;
+      document.getElementById('editNotes').value = b.notes;
+      openModal('editPaymentModal');
+    }
+  });
+
+  // Edit payment form submission
+  document.getElementById('editPaymentForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('editRecordId').value;
+    const res = await fetch(`/api/payment-record/${id}/update/`, {
+      method: 'POST',
+      body: new FormData(e.target),
+      headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('Payment updated successfully', 'success');
+      setTimeout(() => location.reload(), 1500);
+    } else {
+      showToast(data.message || 'Error updating payment', 'error');
+    }
+  };
+
+  // Delete record
+  async function deleteRecord(id) {
+    if (!confirm('Permanently delete this payment record? This will adjust the monthly balance.')) return;
+    const res = await fetch(`/api/payment-record/${id}/delete/`, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('Payment deleted successfully', 'success');
+      setTimeout(() => location.reload(), 1500);
+    } else {
+      showToast(data.message || 'Error deleting payment', 'error');
+    }
+  }
+
+  // View Switching
+  function switchView(view) {
+    const grid = document.getElementById('paymentsGrid');
+    const table = document.getElementById('paymentsTable');
+    const btnGrid = document.getElementById('btn-grid');
+    const btnList = document.getElementById('btn-list');
+
+    if (view === 'grid') {
+      grid.style.display = 'grid';
+      table.style.display = 'none';
+      btnGrid.classList.add('active');
+      btnList.classList.remove('active');
+    } else {
+      grid.style.display = 'none';
+      table.style.display = 'block';
+      btnGrid.classList.remove('active');
+      btnList.classList.add('active');
+    }
+
+    // Save preference
+    localStorage.setItem('ledgerView', view);
+  }
+
+  // Filter payments (client-side search)
+  function filterPayments() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+
+    // Filter Grid Cards
+    const cards = document.querySelectorAll('.ledger-card');
+    cards.forEach(card => {
+      const roomNumber = card.dataset.room.toLowerCase();
+      const tenantName = card.querySelector('.tenant-name')?.textContent.toLowerCase() || '';
+
+      if (roomNumber.includes(searchTerm) || tenantName.includes(searchTerm)) {
+        card.style.display = 'block';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+
+    // Filter Table Rows
+    const rows = document.querySelectorAll('.payment-row-table');
+    rows.forEach(row => {
+      const roomNumber = row.dataset.room.toLowerCase();
+      // Tenant name is in 2nd column
+      const tenantName = row.children[1].textContent.toLowerCase();
+
+      if (roomNumber.includes(searchTerm) || tenantName.includes(searchTerm)) {
+        row.style.display = 'table-row';
+      } else {
+        row.style.display = 'none';
+      }
+    });
+  }
+
+  // Load view preference on startup
+  document.addEventListener('DOMContentLoaded', function () {
+    loadPaymentsForMonth();
+    const savedView = localStorage.getItem('ledgerView') || 'grid';
+    switchView(savedView);
+  });
+
+  // Clear all filters
+  function clearFilters() {
+    window.location.href = '{% url "manage_payments" %}';
+  }
+
+  // Export data
+  function exportData(format) {
+    showToast('Export feature coming soon!', 'success');
+    // TODO: Implement export functionality
+  }
+
+  // View payment history
+  function viewDetails(paymentId) {
+    // Fetch payment history for this monthly payment
+    fetch(`/api/room/payment/${paymentId}/records/`)
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          displayPaymentHistory(data.payment, data.records);
+        } else {
+          showToast('Error loading payment history', 'error');
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        showToast('Error loading payment history', 'error');
+      });
+  }
+
+  function displayPaymentHistory(payment, records) {
+    const modal = document.getElementById('paymentHistoryModal');
+    const historyContainer = document.getElementById('paymentHistoryContent');
+
+    // Build history HTML
+    let html = `
+      <div style="background: var(--bg-canvas); padding: 1.5rem; border-radius: var(--radius-md); margin-bottom: 1.5rem;">
+        <h3 style="margin: 0 0 0.5rem 0; color: var(--primary);">Room ${payment.room_number} - ${payment.month}</h3>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 1rem;">
+          <div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Total Due</div>
+            <div style="font-size: 1.25rem; font-weight: 700; color: var(--text-main);">₹${payment.total_due}</div>
+          </div>
+          <div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Paid</div>
+            <div style="font-size: 1.25rem; font-weight: 700; color: var(--success);">₹${payment.paid_amount}</div>
+          </div>
+          <div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Remaining</div>
+            <div style="font-size: 1.25rem; font-weight: 700; color: var(--danger);">₹${payment.remaining}</div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    if (records.length === 0) {
+      html += '<div style="text-align: center; padding: 3rem; color: var(--text-muted);">No payment records yet</div>';
+    } else {
+      html += '<div style="display: flex; flex-direction: column; gap: 1rem;">';
+      records.forEach(record => {
+        html += `
+          <div style="background: var(--bg-main); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+              <div>
+                <div style="font-size: 1.25rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.25rem;">₹${record.amount}</div>
+                <div style="font-size: 0.875rem; color: var(--text-muted);">${record.date} • ${record.method_display}</div>
+              </div>
+              <div style="display: flex; gap: 0.5rem;">
+                <button onclick="editPaymentRecord(${record.id}, ${payment.id})" class="quick-action-btn" style="padding: 0.5rem 1rem;">✏️ Edit</button>
+                <button onclick="deletePaymentRecord(${record.id}, ${payment.id})" class="quick-action-btn" style="padding: 0.5rem 1rem; background: var(--danger-light); color: var(--danger);">🗑️ Delete</button>
+              </div>
+            </div>
+            ${record.reference_number ? `<div style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 0.5rem;"><strong>Ref:</strong> ${record.reference_number}</div>` : ''}
+            ${record.notes ? `<div style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 0.5rem;"><strong>Notes:</strong> ${record.notes}</div>` : ''}
+            <div style="font-size: 0.75rem; color: var(--text-muted); font-style: italic; margin-top: 0.75rem;">Recorded by ${record.created_by} on ${record.created_at}</div>
+          </div>
+        `;
+      });
+      html += '</div>';
+    }
+
+    historyContainer.innerHTML = html;
+    modal.style.display = 'flex';
+  }
+
+  function editPaymentRecord(recordId, paymentId) {
+    // Fetch record details and populate edit modal
+    fetch(`/api/payment-record/${recordId}/`)
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          document.getElementById('editRecordId').value = recordId;
+          document.getElementById('editAmount').value = data.record.amount;
+          document.getElementById('editDate').value = data.record.date;
+          document.getElementById('editMethod').value = data.record.method;
+          document.getElementById('editNotes').value = data.record.notes || '';
+          document.getElementById('editReference').value = data.record.reference_number || '';
+
+          // Store payment ID for refresh after edit
+          document.getElementById('editPaymentForm').dataset.paymentId = paymentId;
+
+          // Close history modal and open edit modal
+          document.getElementById('paymentHistoryModal').style.display = 'none';
+          document.getElementById('editPaymentModal').style.display = 'flex';
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        showToast('Error loading record details', 'error');
+      });
+  }
+
+  function deletePaymentRecord(recordId, paymentId) {
+    if (!confirm('Are you sure you want to delete this payment record? This action cannot be undone.')) {
+      return;
+    }
+
+    fetch(`/api/payment-record/${recordId}/delete/`, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': getCookie('csrftoken'),
+        'Content-Type': 'application/json'
+      }
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          showToast('Payment record deleted successfully', 'success');
+          // Refresh history
+          viewDetails(paymentId);
+          // Reload page to update totals
+          setTimeout(() => location.reload(), 1000);
+        } else {
+          showToast(data.message || 'Error deleting record', 'error');
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        showToast('Error deleting record', 'error');
+      });
+  }
+
+  // Generate Electricity Bill Modal Functions
+  function openGenerateBillModal(roomId, roomNumber, month) {
+    document.getElementById('billRoomId').value = roomId;
+    document.getElementById('billRoomNumber').value = roomNumber;
+
+    // Convert YYYY-MM-DD to YYYY-MM for month input
+    const monthValue = month.substring(0, 7);
+    document.getElementById('billMonth').value = monthValue;
+
+    // Fetch previous reading
+    fetchPreviousReading(roomId, monthValue);
+
+    document.getElementById('generateBillModal').style.display = 'flex';
+  }
+
+  async function fetchPreviousReading(roomId, month) {
+    // Set default values while loading
+    document.getElementById('billPreviousReading').value = '13.00';
+    document.getElementById('billEndingReading').value = '';
+    document.getElementById('billUnitsConsumed').value = '0.00';
+    document.getElementById('billAmount').value = '₹0.00';
+
+    try {
+      const response = await fetch(`/api/room/${roomId}/electricity-history/`);
+      const data = await response.json();
+
+      if (data.success && data.history && data.history.length > 0) {
+        // Get the most recent bill's ending reading
+        const latestBill = data.history[0];
+        document.getElementById('billPreviousReading').value = parseFloat(latestBill.ending_reading || (latestBill.units + 13)); // Approximate
+      }
+    } catch (error) {
+      console.log('Could not fetch previous reading, using default');
+    }
+  }
+
+  function calculateBillPreview() {
+    const previousReading = parseFloat(document.getElementById('billPreviousReading').value) || 0;
+    const endingReading = parseFloat(document.getElementById('billEndingReading').value) || 0;
+    const ratePerUnit = parseFloat(document.getElementById('billRatePerUnit').value) || 8;
+
+    const unitsConsumed = Math.max(0, endingReading - previousReading);
+    const billAmount = unitsConsumed * ratePerUnit;
+
+    document.getElementById('billUnitsConsumed').value = unitsConsumed.toFixed(2);
+    document.getElementById('billAmount').value = `₹${billAmount.toFixed(2)}`;
+  }
+
+  // Handle Generate Bill Form Submission
+  document.getElementById('generateBillForm').addEventListener('submit', async function (e) {
+    e.preventDefault();
+
+    const formData = new FormData(this);
+    formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+    try {
+      const response = await fetch('{% url "generate_single_room_bill" %}', {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert(`✓ ${data.message}\n\nBill Details:\n` +
+          `Units: ${data.bill.units_consumed}\n` +
+          `Amount: ₹${data.bill.bill_amount}`);
+
+        document.getElementById('generateBillModal').style.display = 'none';
+        location.reload(); // Reload to show updated totals
+      } else {
+        alert(`✗ Error: ${data.message}`);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('✗ Failed to generate bill. Please try again.');
+    }
+  });
+
+</script>
+{% endblock %}
