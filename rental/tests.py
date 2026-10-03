@@ -12,7 +12,7 @@ import json
 @override_settings(
     MIDDLEWARE=[m for m in settings.MIDDLEWARE if 'LoginRequiredMiddleware' not in m],
     APPEND_SLASH=False,
-    ELECTRICITY_RATE_PER_UNIT='17.00',
+    ELECTRICITY_RATE_PER_UNIT='13.00',
 )
 class RoomFirstBillingApiTests(TestCase):
     def setUp(self):
@@ -39,8 +39,8 @@ class RoomFirstBillingApiTests(TestCase):
             starting_reading='50.00',
             ending_reading='64.00',
             units_consumed='14.00',
-            rate_per_unit='17.00',
-            bill_amount='238.00',
+            rate_per_unit='13.00',
+            bill_amount='182.00',
             due_date=self.previous_month,
         )
 
@@ -52,6 +52,7 @@ class RoomFirstBillingApiTests(TestCase):
         room_list = self.client.get(reverse('api_rooms'))
         self.assertEqual(room_list.status_code, 200)
         self.assertEqual(room_list.json()['rooms'][0]['building'], 'M1')
+        self.assertEqual(room_list.json()['rooms'][0]['new_bill_rate'], 13)
         self.assertEqual(MonthlyPayment.objects.count(), monthly_count)
         self.assertEqual(room_list.json()['rooms'][0]['payment_status'], 'DUE')
         dashboard = self.client.get(reverse('dashboard'))
@@ -90,9 +91,9 @@ class RoomFirstBillingApiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         generated = response.json()
         self.assertEqual(generated['units_used'], 34)
-        self.assertEqual(generated['electricity_amount'], 578)
+        self.assertEqual(generated['electricity_amount'], 442)
         self.assertEqual(generated['agreed_rent'], 7500)
-        self.assertEqual(generated['total_bill'], 8078)
+        self.assertEqual(generated['total_bill'], 7942)
 
         bill = ElectricityBill.objects.get(room=self.room, month=self.month)
         repeated_response = self.client.post(
@@ -102,11 +103,11 @@ class RoomFirstBillingApiTests(TestCase):
         )
         self.assertEqual(repeated_response.status_code, 200)
         self.assertEqual(repeated_response.json()['bill']['id'], bill.id)
-        self.assertEqual(repeated_response.json()['total_bill'], 8078)
+        self.assertEqual(repeated_response.json()['total_bill'], 7942)
         self.assertEqual(bill.starting_reading, 64)
         self.assertEqual(bill.ending_reading, 98)
         self.assertEqual(bill.units_consumed, 34)
-        self.assertEqual(bill.bill_amount, 578)
+        self.assertEqual(bill.bill_amount, 442)
         self.historical_bill.refresh_from_db()
         self.assertEqual(self.historical_bill.ending_reading, 64)
 
@@ -118,9 +119,9 @@ class RoomFirstBillingApiTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         first_collection = response.json()
-        self.assertEqual(first_collection['total_bill'], 8078)
+        self.assertEqual(first_collection['total_bill'], 7942)
         self.assertEqual(first_collection['collected_amount'], 5000)
-        self.assertEqual(first_collection['outstanding_amount'], 3078)
+        self.assertEqual(first_collection['outstanding_amount'], 2942)
         self.assertEqual(first_collection['payment_status'], 'PARTIAL')
 
         payment_url = reverse('api_room_payments', args=[self.room.id])
@@ -130,8 +131,8 @@ class RoomFirstBillingApiTests(TestCase):
 
         detail = self.client.get(reverse('api_room_detail', args=[self.room.id])).json()['room']
         current_bill = self.client.get(reverse('api_current_bill', args=[self.room.id])).json()
-        self.assertEqual(detail['total_bill'], 8078)
-        self.assertEqual(detail['outstanding_amount'], 3078)
+        self.assertEqual(detail['total_bill'], 7942)
+        self.assertEqual(detail['outstanding_amount'], 2942)
         self.assertEqual(current_bill['payment_status'], 'PARTIAL')
 
         metrics_response = self.client.get(reverse('dashboard_metrics_api')).json()
@@ -144,9 +145,9 @@ class RoomFirstBillingApiTests(TestCase):
         performance = self.client.get(reverse('performance_dashboard'))
         self.assertEqual(performance.status_code, 200)
         self.assertContains(performance, 'Z-001')
-        self.assertContains(performance, '8078.0')
-        self.assertContains(performance, '₹5000 / ₹8078')
-        self.assertContains(performance, '₹3078')
+        self.assertContains(performance, '7942.0')
+        self.assertContains(performance, '₹5000 / ₹7942')
+        self.assertContains(performance, '₹2942')
         self.assertContains(performance, '100%')
 
         response = self.client.post(
@@ -165,19 +166,93 @@ class RoomFirstBillingApiTests(TestCase):
 
         response = self.client.post(
             collect_url,
-            data=json.dumps({'amount': '3078'}),
+            data=json.dumps({'amount': '2942'}),
             content_type='application/json',
         )
         self.assertEqual(response.status_code, 200)
         final_collection = response.json()
-        self.assertEqual(final_collection['collected_amount'], 8078)
+        self.assertEqual(final_collection['collected_amount'], 7942)
         self.assertEqual(final_collection['outstanding_amount'], 0)
         self.assertEqual(final_collection['payment_status'], 'PAID')
         self.assertEqual(len(self.client.get(payment_url).json()['payments']), 2)
 
         monthly_payment = MonthlyPayment.objects.get(room=self.room, month=self.month)
-        self.assertEqual(monthly_payment.paid_amount, 8078)
+        self.assertEqual(monthly_payment.paid_amount, 7942)
         self.assertEqual(monthly_payment.payment_status, 'paid')
+
+    def test_new_room_bill_uses_thirteen_per_unit_and_adds_agreed_rent(self):
+        response = self.client.post(
+            reverse('api_generate_bill', args=[self.room.id]),
+            data=json.dumps({'current_reading': '114'}),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        generated = response.json()
+        bill = ElectricityBill.objects.get(room=self.room, month=self.month)
+        self.assertEqual(generated['units_used'], 50)
+        self.assertEqual(generated['electricity_rate'], 13)
+        self.assertEqual(generated['electricity_amount'], 650)
+        self.assertEqual(generated['agreed_rent'], 7500)
+        self.assertEqual(generated['total_bill'], 8150)
+        self.assertEqual(bill.rate_per_unit, 13)
+        self.assertEqual(bill.bill_amount, 650)
+
+    def test_regenerating_does_not_change_an_existing_bill_at_another_rate(self):
+        existing_bill = ElectricityBill.objects.create(
+            room=self.room,
+            month=self.month,
+            starting_reading='64.00',
+            ending_reading='80.00',
+            units_consumed='16.00',
+            rate_per_unit='17.00',
+            bill_amount='272.00',
+            due_date=self.month,
+        )
+
+        response = self.client.post(
+            reverse('api_generate_bill', args=[self.room.id]),
+            data=json.dumps({'current_reading': '114'}),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 409)
+        existing_bill.refresh_from_db()
+        self.assertEqual(existing_bill.ending_reading, 80)
+        self.assertEqual(existing_bill.units_consumed, 16)
+        self.assertEqual(existing_bill.rate_per_unit, 17)
+        self.assertEqual(existing_bill.bill_amount, 272)
+        room_snapshot = self.client.get(
+            reverse('api_room_detail', args=[self.room.id])
+        ).json()['room']
+        self.assertEqual(room_snapshot['electricity_rate'], 17)
+        self.assertEqual(room_snapshot['new_bill_rate'], 13)
+
+    def test_room_tenant_api_uses_existing_guest_document_fields(self):
+        guest = Guest.objects.create(
+            first_name='Document',
+            last_name='Tenant',
+            room=self.room,
+            is_active=True,
+            id_type='Passport',
+            id_number='P123456',
+            college_id='STU-123',
+            student_college='Example College',
+        )
+
+        response = self.client.get(reverse('get_room_tenants', args=[self.room.id]))
+
+        self.assertEqual(response.status_code, 200)
+        tenant = response.json()['tenants'][0]
+        self.assertEqual(tenant['id'], guest.id)
+        self.assertEqual(tenant['name'], 'Document Tenant')
+        self.assertEqual(tenant['college_id'], 'STU-123')
+        self.assertEqual(tenant['student_college'], 'Example College')
+        self.assertIsNone(tenant['govt_id_photo'])
+        self.assertIsNone(tenant['aadhar_front'])
+        self.assertIsNone(tenant['aadhar_back'])
+        self.assertIsNone(tenant['college_id_photo'])
+        self.assertIsNone(tenant['document_verification_image'])
 
     def test_building_and_billing_pages_render_without_server_errors(self):
         route_names = (
@@ -235,7 +310,7 @@ class ElectricityBillFormTests(TestCase):
             'month': '2025-11',
             'starting_reading': '100.0',
             'ending_reading': '150.0',
-            'rate_per_unit': '8.5',
+            'rate_per_unit': '13',
             'due_date': '2025-11-20'
         }
         response = self.client.post(url, data)
@@ -246,6 +321,63 @@ class ElectricityBillFormTests(TestCase):
         bill = ElectricityBill.objects.filter(room=self.room).first()
         self.assertIsNotNone(bill)
         self.assertEqual(bill.units_consumed, 50.0)
+        self.assertEqual(bill.rate_per_unit, 13)
+        self.assertEqual(bill.bill_amount, 650)
+
+    def test_create_bill_rejects_non_configured_rate(self):
+        response = self.client.post(reverse('create_electricity_bill'), {
+            'room_id': str(self.room.id),
+            'month': '2025-12',
+            'starting_reading': '100.0',
+            'ending_reading': '150.0',
+            'rate_per_unit': '17',
+        })
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(ElectricityBill.objects.filter(room=self.room, month='2025-12-01').exists())
+
+    def test_single_room_generator_uses_configured_rate(self):
+        month = timezone.now().date().replace(day=1)
+        previous_month = (month - timedelta(days=1)).replace(day=1)
+        ElectricityBill.objects.create(
+            room=self.room,
+            month=previous_month,
+            starting_reading='50.00',
+            ending_reading='64.00',
+            units_consumed='14.00',
+            rate_per_unit='13.00',
+            bill_amount='182.00',
+            due_date=previous_month,
+        )
+        response = self.client.post(reverse('generate_single_room_bill'), {
+            'room_id': str(self.room.id),
+            'month': month.strftime('%Y-%m'),
+            'ending_reading': '114',
+            'rate_per_unit': '13',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        bill = ElectricityBill.objects.get(room=self.room, month=month)
+        self.assertEqual(bill.units_consumed, 50)
+        self.assertEqual(bill.rate_per_unit, 13)
+        self.assertEqual(bill.bill_amount, 650)
+
+    def test_bulk_generator_uses_configured_rate(self):
+        month = timezone.now().date().replace(day=1)
+        response = self.client.post(reverse('bulk_create_electricity_bills'), {
+            'month': month.strftime('%Y-%m'),
+            'rate_per_unit': '13',
+            'readings': json.dumps([{
+                'room_id': self.room.id,
+                'starting_reading': '64',
+                'ending_reading': '114',
+            }]),
+        })
+
+        self.assertEqual(response.status_code, 200)
+        bill = ElectricityBill.objects.get(room=self.room, month=month)
+        self.assertEqual(bill.units_consumed, 50)
+        self.assertEqual(bill.rate_per_unit, 13)
+        self.assertEqual(bill.bill_amount, 650)
 
     def test_create_bill_missing_month(self):
         url = reverse('create_electricity_bill')
@@ -253,7 +385,7 @@ class ElectricityBillFormTests(TestCase):
             'room_id': str(self.room.id),
             'starting_reading': '100.0',
             'ending_reading': '150.0',
-            'rate_per_unit': '8.5',
+            'rate_per_unit': '13',
         }
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 400)
@@ -267,7 +399,7 @@ class ElectricityBillFormTests(TestCase):
             'month': '2025-11',
             'starting_reading': '200.0',
             'ending_reading': '150.0',
-            'rate_per_unit': '8.5',
+            'rate_per_unit': '13',
             'due_date': '2025-11-20'
         }
         response = self.client.post(url, data)

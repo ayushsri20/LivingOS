@@ -24,6 +24,20 @@ logger = logging.getLogger(__name__)
 def is_admin(user):
     return user.is_staff or user.is_superuser
 
+
+def _configured_electricity_rate():
+    return Decimal(str(settings.ELECTRICITY_RATE_PER_UNIT))
+
+
+def _requested_electricity_rate_matches_configured(requested_rate):
+    if requested_rate in (None, ''):
+        return True
+    try:
+        return Decimal(str(requested_rate)) == _configured_electricity_rate()
+    except (ArithmeticError, TypeError, ValueError):
+        return False
+
+
 def home(request):
     return render(request, 'home.html')
 
@@ -1156,6 +1170,7 @@ def manage_payments(request):
             'overdue': status_distribution['overdue'],
             'total_pending_amount': total_pending,
         },
+        'electricity_rate': _configured_electricity_rate(),
     }
     
     return render(request, template_name, context)
@@ -1212,6 +1227,7 @@ def manage_electricity_bills(request):
     context = {
         'rooms': rooms,
         'bill_stats': bill_stats,
+        'electricity_rate': _configured_electricity_rate(),
     }
     
     return render(request, 'manage_electricity_bills_v2.html', context)
@@ -1391,10 +1407,13 @@ def create_electricity_bill(request):
         try:
             starting_reading = float(request.POST.get('starting_reading') or 13)  # Default: 13 units
             ending_reading = float(request.POST.get('ending_reading') or (starting_reading + 150))  # Default: +150 units  
-            rate_per_unit = float(request.POST.get('rate_per_unit') or 13)  # Default: ₹13/unit
+            requested_rate = request.POST.get('rate_per_unit')
         except (TypeError, ValueError):
             return JsonResponse({'success': False, 'message': 'Invalid numeric input for readings or rate'}, status=400)
 
+        rate_per_unit = float(_configured_electricity_rate())
+        if not _requested_electricity_rate_matches_configured(requested_rate):
+            return JsonResponse({'success': False, 'message': 'Electricity rate is set by the server and cannot be overridden'}, status=400)
         if ending_reading < starting_reading:
             return JsonResponse({'success': False, 'message': 'Ending reading must be greater than or equal to starting reading'}, status=400)
         if rate_per_unit <= 0:
@@ -1451,6 +1470,11 @@ def create_electricity_bill(request):
         )
 
         if not created:
+            if Decimal(str(bill.rate_per_unit)) != _configured_electricity_rate():
+                return JsonResponse({
+                    'success': False,
+                    'message': 'This bill already exists at a different electricity rate and was not changed.',
+                }, status=409)
             bill.guest = guest
             bill.starting_reading = starting_reading
             bill.ending_reading = ending_reading
@@ -1546,9 +1570,11 @@ def bulk_create_electricity_bills(request):
 
         # Parse rate
         try:
-            rate_per_unit = float(rate_per_unit_str or 13)
+            rate_per_unit = float(_configured_electricity_rate())
         except (TypeError, ValueError):
             return JsonResponse({'success': False, 'message': 'Invalid rate per unit'}, status=400)
+        if not _requested_electricity_rate_matches_configured(rate_per_unit_str):
+            return JsonResponse({'success': False, 'message': 'Electricity rate is set by the server and cannot be overridden'}, status=400)
 
         # Parse month
         try:
@@ -1623,6 +1649,12 @@ def bulk_create_electricity_bills(request):
                 if created:
                     created_count += 1
                 else:
+                    if Decimal(str(bill.rate_per_unit)) != _configured_electricity_rate():
+                        errors.append({
+                            'room': room_id,
+                            'error': 'Existing bill has a different electricity rate and was not changed',
+                        })
+                        continue
                     # Update existing bill
                     bill.guest = guest
                     bill.starting_reading = starting_reading
@@ -1961,10 +1993,17 @@ def get_room_tenants(request, room_id):
                 'country': guest.country,
                 'zip_code': guest.zip_code,
                 'notes': guest.notes,
-                'lpu_id': guest.lpu_id if hasattr(guest, 'lpu_id') else '',
-                'id_proof_image': guest.id_proof_image.url if guest.id_proof_image else None,
-                'lpu_id_photo': guest.lpu_id_photo.url if guest.lpu_id_photo else None,
-                'document_verification_image': guest.document_verification_image.url if guest.document_verification_image else None
+                'college_id': guest.college_id,
+                'student_college': guest.student_college,
+                'govt_id_photo': guest.govt_id_photo.url if guest.govt_id_photo else None,
+                'aadhar_front': guest.aadhar_front.url if guest.aadhar_front else None,
+                'aadhar_back': guest.aadhar_back.url if guest.aadhar_back else None,
+                'college_id_photo': guest.college_id_photo.url if guest.college_id_photo else None,
+                'document_verification_image': (
+                    guest.document_verification_image.url
+                    if guest.document_verification_image
+                    else None
+                ),
             })
         
         return JsonResponse({
@@ -2011,7 +2050,8 @@ def _get_room_billing_snapshot(room):
         'previous_reading': float(current_bill.starting_reading) if current_bill else float(previous_bill.ending_reading) if previous_bill else 0,
         'current_reading': float(current_bill.ending_reading) if current_bill else None,
         'units_used': float(current_bill.units_consumed) if current_bill else 0,
-        'electricity_rate': float(current_bill.rate_per_unit) if current_bill else float(settings.ELECTRICITY_RATE_PER_UNIT),
+        'electricity_rate': float(current_bill.rate_per_unit) if current_bill else float(_configured_electricity_rate()),
+        'new_bill_rate': float(_configured_electricity_rate()),
         'electricity_amount': float(electricity_amount),
         'collected_amount': float(collected),
         'outstanding_amount': float(outstanding),
@@ -2067,7 +2107,7 @@ def api_generate_bill(request, room_id):
             return JsonResponse({'success': False, 'message': 'Current electricity reading is required'}, status=400)
 
         current_reading = Decimal(str(data['current_reading']))
-        rate_per_unit = Decimal(str(settings.ELECTRICITY_RATE_PER_UNIT))
+        rate_per_unit = _configured_electricity_rate()
         if not rate_per_unit.is_finite() or rate_per_unit <= 0:
             return JsonResponse({'success': False, 'message': 'Electricity rate must be configured as a positive finite value'}, status=500)
         currency_precision = Decimal('0.01')
@@ -2083,6 +2123,12 @@ def api_generate_bill(request, room_id):
             return JsonResponse({'success': False, 'message': 'Current reading must be a finite, non-negative number'}, status=400)
 
         month = timezone.now().date().replace(day=1)
+        existing_bill = ElectricityBill.objects.filter(room=room, month=month).first()
+        if existing_bill and Decimal(str(existing_bill.rate_per_unit)) != rate_per_unit:
+            return JsonResponse({
+                'success': False,
+                'message': 'This bill already exists at a different electricity rate and was not changed.',
+            }, status=409)
         previous_bill = ElectricityBill.objects.filter(room=room, month__lt=month).order_by('-month').first()
         previous_reading = Decimal(str(previous_bill.ending_reading)) if previous_bill else Decimal('0')
         if current_reading < previous_reading:
@@ -2510,7 +2556,7 @@ def generate_single_room_bill(request):
         room_id = request.POST.get('room_id')
         month_str = request.POST.get('month')
         ending_reading_str = request.POST.get('ending_reading')
-        rate_per_unit_str = request.POST.get('rate_per_unit', '8')
+        rate_per_unit_str = request.POST.get('rate_per_unit')
         
         # Validate required fields
         if not room_id:
@@ -2524,9 +2570,11 @@ def generate_single_room_bill(request):
         try:
             from decimal import Decimal
             ending_reading = Decimal(str(ending_reading_str))
-            rate_per_unit = Decimal(str(rate_per_unit_str))
+            rate_per_unit = _configured_electricity_rate()
         except (TypeError, ValueError):
             return JsonResponse({'success': False, 'message': 'Invalid numeric input'}, status=400)
+        if not _requested_electricity_rate_matches_configured(rate_per_unit_str):
+            return JsonResponse({'success': False, 'message': 'Electricity rate is set by the server and cannot be overridden'}, status=400)
         
         # Get room
         try:
@@ -2587,6 +2635,11 @@ def generate_single_room_bill(request):
         )
         
         if not created:
+            if Decimal(str(bill.rate_per_unit)) != rate_per_unit:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'This bill already exists at a different electricity rate and was not changed.',
+                }, status=409)
             # Update existing bill
             bill.guest = guest
             bill.starting_reading = starting_reading
