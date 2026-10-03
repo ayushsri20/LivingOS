@@ -1,11 +1,10 @@
-# Render Blueprint for automatic deployment
+# Render Blueprint for the Django web service.
 # https://render.com/docs/blueprint-spec
-
-databases:
-  - name: panesar-pg-db
-    databaseName: panesar_pg
-    user: panesar_admin
-    plan: free
+#
+# The database is NOT provisioned here: this project targets an external
+# Supabase PostgreSQL instance. Supply DATABASE_URL as an environment variable
+# (Supabase → Project Settings → Database → URI, using the *session* pooler
+# connection string for a free tier).
 
 services:
   - type: web
@@ -13,18 +12,25 @@ services:
     runtime: python
     plan: free
     buildCommand: "./build.sh"
+    # Migrations are deliberately not part of the build. Run
+    # `python manage.py migrate` from the Render shell once, against the
+    # Supabase database, after the environment variables are set.
     startCommand: "gunicorn -w 4 -b 0.0.0.0:${PORT:-10000} hotel_project.wsgi:application"
     envVars:
       - key: DATABASE_URL
-        fromDatabase:
-          name: panesar-pg-db
-          property: connectionString
+        sync: false
       - key: SECRET_KEY
         generateValue: true
       - key: DEBUG
         value: "false"
       - key: ALLOWED_HOSTS
-        value: "*.onrender.com,*.up.railway.app,panesar-pg.onrender.com"
+        value: "*.onrender.com"
+      # Add the deployed Vercel origin(s), comma separated, e.g.
+      # https://panesar-rental.vercel.app
+      - key: CSRF_TRUSTED_ORIGINS
+        sync: false
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
       - key: DJANGO_SETTINGS_MODULE
         value: "hotel_project.settings"
       - key: PYTHONUNBUFFERED

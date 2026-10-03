@@ -77,8 +77,30 @@ ALLOWED_HOSTS = list(
 
 CSRF_TRUSTED_ORIGINS = env_list(
     "CSRF_TRUSTED_ORIGINS",
-    "http://localhost:8000,http://127.0.0.1:8000",
+    "http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174",
 )
+
+
+# -----------------------------------------------------------------------------
+# CORS (production only)
+# -----------------------------------------------------------------------------
+# The React frontend is served from a different origin than this API and
+# authenticates with session cookies sent via `credentials: 'include'`, so
+# CORS must explicitly allow those origins — a wildcard is not permitted
+# alongside credentials.
+#
+# Set CORS_ALLOWED_ORIGINS to the deployed Vercel domain(s), comma separated.
+# Nothing is enabled during local development, where both run on localhost.
+if not DEBUG:
+    CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS")
+
+    # Optional regex for preview/staging Vercel domains, e.g.
+    # r"https://panesar-.*\.vercel\.app"
+    CORS_ALLOWED_ORIGIN_REGEXES = env_list("CORS_ALLOWED_ORIGIN_REGEXES")
+
+    # Required for the session cookie to be accepted cross-origin.
+    CORS_ALLOW_CREDENTIALS = True
+
 
 
 # -----------------------------------------------------------------------------
@@ -100,6 +122,11 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
+
+    # Must sit above CommonMiddleware so the CORS headers are applied to
+    # responses. Required because the React app is served from a different
+    # origin (Vercel) than the API (Render).
+    "corsheaders.middleware.CorsMiddleware",
 
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -215,7 +242,7 @@ USE_TZ = True
 
 ELECTRICITY_RATE_PER_UNIT = os.getenv(
     "ELECTRICITY_RATE_PER_UNIT",
-    "17.00",
+    "13.00",
 )
 
 
@@ -301,8 +328,16 @@ else:
 
     SESSION_COOKIE_HTTPONLY = True
 
-    SESSION_COOKIE_SAMESITE = "Lax"
-    CSRF_COOKIE_SAMESITE = "Lax"
+    # The frontend (Vercel) and the API (Render) are different *sites*, so a
+    # `Lax` cookie is never sent on the app's XHR calls: login would appear to
+    # succeed and then every later request would 401. `None` is required for
+    # cross-site session auth and is only safe alongside `Secure` (set above)
+    # over HTTPS. Overridable via env for single-origin deployments.
+    SESSION_COOKIE_SAMESITE = os.getenv("SESSION_COOKIE_SAMESITE", "None")
+
+    # Browsers only store a SameSite=None cookie on a secure origin, and the
+    # React client reads the CSRF cookie from JavaScript.
+    CSRF_COOKIE_SAMESITE = os.getenv("CSRF_COOKIE_SAMESITE", "None")
 
     CSRF_USE_SESSIONS = False
 

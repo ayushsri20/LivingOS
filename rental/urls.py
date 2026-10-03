@@ -1,4 +1,5 @@
 from .dashboard_api import dashboard_metrics_api
+from .report_api import expenses_api, monthly_report_api, yearly_report_api
 from django.urls import path
 from . import views
 from .performance_views import (
@@ -60,4 +61,8 @@ urlpatterns = [
     path('api/payment-record/<int:record_id>/delete/', views.delete_payment_record, name='delete_payment_record'),
     path('api/payments/by-month/', views.get_payments_by_month, name='get_payments_by_month'),
     path('api/dashboard/metrics/', dashboard_metrics_api, name='dashboard_metrics_api'),
+    # Read-only expense + financial reporting endpoints (no schema change).
+    path('api/expenses/', expenses_api, name='expenses_api'),
+    path('api/reports/monthly/', monthly_report_api, name='monthly_report_api'),
+    path('api/reports/yearly/', yearly_report_api, name='yearly_report_api'),
 ]

@@ -1,0 +1,1215 @@
+/* =========================================================
+   Shared page-level components CSS
+   ========================================================= */
+
+/* Page shell */
+.page-shell {
+  width: 100%;
+  min-height: 100vh;
+  background: var(--paper);
+}
+
+/* Topbar (reused across pages) */
+.topbar {
+  min-height: 80px;
+  padding: 15px clamp(18px, 4vw, 56px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  border-bottom: var(--line);
+  background: var(--paper);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.brand-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-mark {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: var(--line);
+  background: var(--yellow);
+  box-shadow: 3px 3px 0 var(--ink);
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.brand-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 13px;
+}
+
+.brand-subtitle {
+  color: #5c564c;
+  font-size: 12px;
+}
+
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ghost-button {
+  min-height: 42px;
+  padding: 8px 14px;
+  border: var(--line);
+  background: var(--white);
+  box-shadow: 3px 3px 0 var(--ink);
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 13px;
+  transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  color: var(--ink);
+}
+
+.ghost-button:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 5px 5px 0 var(--ink);
+}
+
+.ghost-button.active {
+  background: var(--blue);
+  color: #fff;
+}
+
+/* Nav links in topbar */
+.nav-link {
+  min-height: 38px;
+  padding: 7px 12px;
+  border: 1.5px solid var(--ink);
+  background: var(--white);
+  box-shadow: 2px 2px 0 var(--ink);
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 12px;
+  text-decoration: none;
+  color: var(--ink);
+  display: inline-flex;
+  align-items: center;
+  transition: transform var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
+}
+
+/* Hover is a light lift; the active page keeps the yellow fill so "where am I"
+   stays distinguishable from "what can I touch". */
+.nav-link:hover {
+  transform: translate(-1px, -1px);
+}
+
+.nav-link.active {
+  transform: translate(-1px, -1px);
+  background: var(--yellow);
+}
+
+/* Pressing the current page still responds, but without the lift. */
+.nav-link:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+
+/* Content wrapper */
+.content-wrap {
+  width: 100%;
+  max-width: 1440px;
+  min-width: 0;
+  margin: 0 auto;
+  padding: clamp(18px, 4vw, 48px);
+}
+
+/* Page header banner */
+.page-banner {
+  padding: clamp(20px, 3vw, 36px) clamp(20px, 3vw, 36px);
+  border: 3px solid var(--ink);
+  background: var(--yellow);
+  box-shadow: 8px 8px 0 var(--ink);
+  margin-bottom: 28px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.page-banner h1 {
+  margin: 8px 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(28px, 5vw, 52px);
+  font-weight: 700;
+  letter-spacing: -0.055em;
+  line-height: 0.97;
+}
+
+.page-banner p {
+  margin-top: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+  max-width: 520px;
+}
+
+/* Eyebrow label */
+.eyebrow {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 11px;
+}
+
+/* Section heading */
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 28px 0 16px;
+}
+
+.section-head h2 {
+  margin: 5px 0 0;
+  font-family: var(--font-display);
+  font-size: 24px;
+  letter-spacing: -0.04em;
+}
+
+/* Tertiary metadata (timestamp, count, scope) — kept neutral so the yellow
+   accent stays reserved for primary actions and figures. App.css declares the
+   effective rule; this keeps the base layer consistent. */
+.section-head > span {
+  color: #5c564c;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: right;
+}
+
+/* Toast notifications */
+.toast {
+  margin: 14px 0;
+  padding: 12px 15px;
+  border: var(--line);
+  box-shadow: 3px 3px 0 var(--ink);
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.toast.success { background: #d8f0e5; }
+.toast.error { background: #ffe0dc; color: #8e1d14; }
+.toast.info { background: #e8efff; }
+
+/* Loading & empty states */
+.loading-shell {
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #5c564c;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.empty-state {
+  padding: 32px;
+  border: 1px dashed #9d968a;
+  text-align: center;
+  color: #5c564c;
+  font-size: 14px;
+}
+
+/* Data table */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.data-table th {
+  padding: 10px 12px;
+  text-align: left;
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-bottom: var(--line);
+  background: var(--paper);
+}
+
+.data-table td {
+  padding: 10px 12px;
+  border-bottom: 1px dashed #9d968a;
+  vertical-align: middle;
+}
+
+.data-table tbody tr:hover {
+  background: rgba(255, 204, 0, 0.08);
+}
+
+/* Card surface */
+.surface {
+  padding: 20px;
+  border: var(--line);
+  background: var(--white);
+  box-shadow: 4px 4px 0 var(--ink);
+  margin-bottom: 16px;
+}
+
+/* Status badge / tag */
+.status-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 22px;
+  padding: 3px 8px;
+  border: 1.5px solid var(--ink);
+  background: var(--red);
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.status-tag.paid { background: var(--green); }
+.status-tag.partial { background: #8a6a00; }
+.status-tag.vacant { background: var(--blue); }
+.status-tag.due { background: var(--red); }
+.status-tag.pending { background: #9d968a; }
+
+/* Primary action button */
+.btn-primary {
+  min-height: 42px;
+  padding: 10px 18px;
+  border: var(--line);
+  background: var(--yellow);
+  box-shadow: 3px 3px 0 var(--ink);
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 13px;
+  transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+  color: var(--ink);
+}
+
+.btn-primary:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 5px 5px 0 var(--ink);
+}
+
+.btn-primary:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.btn-danger {
+  background: var(--red);
+  color: #fff;
+}
+
+.btn-blue {
+  background: var(--blue);
+  color: #fff;
+}
+
+/* Input / field */
+.field-group {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 14px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.field-group label {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.field-input {
+  min-height: 44px;
+  padding: 10px 12px;
+  border: var(--line);
+  border-radius: 0;
+  background: var(--white);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  width: 100%;
+  transition: box-shadow var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
+}
+
+.field-input:hover:not(:disabled) {
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+.field-input:focus {
+  outline: 3px solid var(--blue);
+  outline-offset: 2px;
+  box-shadow: 4px 4px 0 var(--ink);
+}
+
+.field-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+select.field-input {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%231a1a1a' stroke-width='2' fill='none'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+
+/* Modal overlay */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(26, 26, 26, 0.54);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: backdrop-in var(--dur-normal) var(--ease) both;
+}
+
+.modal-box {
+  width: min(560px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 28px;
+  border: 3px solid var(--ink);
+  background: var(--paper);
+  box-shadow: 10px 10px 0 var(--ink);
+  animation: rise-in var(--dur-normal) var(--ease) both;
+}
+
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: var(--line);
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 22px;
+  letter-spacing: -0.03em;
+}
+
+.modal-close {
+  width: 38px;
+  height: 38px;
+  border: var(--line);
+  background: var(--white);
+  box-shadow: 2px 2px 0 var(--ink);
+  cursor: pointer;
+  font-size: 20px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.modal-close:hover {
+  background: var(--red);
+  color: #fff;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: var(--line);
+}
+
+/* Pill filter buttons */
+.pill-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.pill {
+  min-height: 38px;
+  padding: 7px 12px;
+  border: var(--line);
+  background: var(--white);
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  transition: transform var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
+}
+
+.pill:hover { transform: translateY(-2px); }
+.pill.active { background: var(--blue); color: #fff; }
+
+/* Search box */
+.search-box {
+  min-height: 44px;
+  padding: 10px 13px;
+  border: var(--line);
+  border-radius: 0;
+  background: var(--white);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+/* Analytics metrics row */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.metric-card {
+  padding: 18px;
+  border: var(--line);
+  background: var(--white);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+
+.metric-card span {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.metric-card strong {
+  display: block;
+  margin-top: 8px;
+  font-family: var(--font-display);
+  font-size: clamp(20px, 3vw, 28px);
+  letter-spacing: -0.04em;
+}
+
+.metric-card.blue { background: #e8efff; }
+.metric-card.green { background: #e0f1e8; }
+.metric-card.red { background: #ffe7e2; }
+.metric-card.yellow { background: var(--yellow); }
+
+/* Animations (shared) */
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-in {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .page-banner {
+    flex-direction: column;
+  }
+
+  .top-actions .nav-link {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .metrics-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Dashboard Specific Layout Additions */
+.dashboard-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.dashboard-grid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 1024px) {
+  .dashboard-grid {
+    grid-template-columns: 2fr 1fr;
+  }
+}
+
+/* Rooms Specific Layout Additions */
+.building-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+  /* Inside a wrapping filter bar the grid would otherwise be squeezed to one
+     column, stacking each filter on its own row. This floor keeps the buttons
+     in rows and lets the whole group wrap to the next line intact. */
+  min-width: 300px;
+}
+
+.building-card {
+  padding: 16px 10px;
+  text-align: center;
+  border: 3px solid var(--ink);
+  background: var(--white);
+  box-shadow: 4px 4px 0 var(--ink);
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
+  color: var(--ink);
+  font-family: inherit;
+}
+
+.building-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 var(--ink);
+}
+
+.building-card.active {
+  background: var(--blue);
+  color: #fff;
+}
+
+.room-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+}
+
+.room-card {
+  padding: 20px;
+  border: 3px solid var(--ink);
+  background: var(--white);
+  box-shadow: 5px 5px 0 var(--ink);
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+  display: flex;
+  flex-direction: column;
+}
+
+.room-card:hover {
+  transform: translate(-3px, -3px);
+  box-shadow: 8px 8px 0 var(--ink);
+}
+
+/* Payments */
+.payments-layout {
+  display: grid;
+  /* minmax(0, 1fr) instead of the implicit `auto` column: `auto` is sized by the
+     filter row's max-content, which grew the column past the viewport between
+     roughly 640px and 900px. Pinning the track lets the row wrap as intended. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+
+/* Matches the base .metrics-grid so the row reflows with its content. The old
+   fixed 3-column rule forced a 4th card onto its own row and clipped currency
+   values between roughly 640px and 900px. */
+.payments-metrics {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.payments-ledger {
+  padding: clamp(16px, 3vw, 24px);
+}
+
+
+.payment-row {
+  display: grid;
+  grid-template-columns: minmax(260px, 1.2fr) minmax(320px, 1.5fr) auto;
+  gap: 18px;
+  align-items: center;
+  padding: 18px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+}
+
+/* The three-column ledger row has minimum tracks (260 + 320 + actions) that
+   cannot fit between roughly 640px and 900px. Declared AFTER the base rules so
+   it wins — a media query adds no specificity. Mirrors the narrow-screen rule
+   without changing drawer behaviour. */
+@media (max-width: 900px) {
+  .payment-row {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .payment-financials {
+    padding: 16px 0 0;
+    border-left: 0;
+    border-top: 2px dashed #9d968a;
+  }
+}
+
+.payment-room-details,
+.payment-financials,
+.payment-actions {
+  display: grid;
+  gap: 12px;
+}
+
+.payment-room-details {
+  grid-template-columns: auto auto minmax(110px, 1fr) auto;
+  align-items: end;
+}
+
+.payment-room-details .eyebrow,
+.payment-financials span,
+.payment-history-item .eyebrow {
+  display: block;
+  color: #5c564c;
+}
+
+.payment-room-details strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 14px;
+}
+
+.payment-room-number {
+  font-family: var(--font-display);
+  font-size: 26px !important;
+  letter-spacing: -0.04em;
+}
+
+.payment-financials {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  padding-left: 18px;
+  border-left: 2px dashed #9d968a;
+}
+
+.payment-financials span {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.payment-financials strong {
+  display: block;
+  margin-top: 5px;
+  font-family: var(--font-display);
+  font-size: 17px;
+  letter-spacing: -0.03em;
+}
+
+.payment-collected { color: #176b45; }
+.payment-outstanding { color: #a82d23; }
+
+.payment-actions {
+  grid-template-columns: 1fr;
+  min-width: 132px;
+}
+
+.payment-actions button {
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.payment-history-panel {
+  grid-column: 1 / -1;
+  padding-top: 16px;
+  border-top: 2px dashed #9d968a;
+}
+
+.payment-history-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.payment-history-item {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 16px;
+  align-items: center;
+  padding: 12px;
+  border: 1.5px solid var(--ink);
+  background: var(--white);
+}
+
+.payment-history-item strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 13px;
+}
+
+.payment-history-item > strong {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 20px;
+}
+
+/* Room Drawer Specifics */
+.drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 26, 26, 0.4);
+  z-index: 100;
+  animation: backdrop-in var(--dur-normal) var(--ease) forwards;
+}
+
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  max-width: 480px;
+  background: var(--paper);
+  border-left: 3px solid var(--ink);
+  box-shadow: -8px 0 0 rgba(26, 26, 26, 0.1);
+  z-index: 101;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  animation: slide-in-right var(--dur-normal) var(--ease) forwards;
+}
+
+.drawer-header {
+  padding: 24px clamp(20px, 4vw, 32px);
+  border-bottom: 3px solid var(--ink);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--yellow);
+}
+
+.drawer-content {
+  padding: clamp(20px, 4vw, 32px);
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.profile-back-button {
+  margin-bottom: 16px;
+}
+
+.resident-profile-card,
+.resident-room-details {
+  margin-bottom: 24px;
+}
+
+.resident-profile-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.resident-profile-heading h3 {
+  margin: 4px 0 0;
+  font-family: var(--font-display);
+  font-size: 28px;
+  letter-spacing: -0.04em;
+}
+
+.resident-profile-card p {
+  margin: 16px 0 0;
+  padding-top: 16px;
+  border-top: 2px dashed #9d968a;
+  color: #5c564c;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.resident-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.resident-detail-grid > div {
+  padding: 12px;
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
+}
+
+.resident-detail-grid .eyebrow {
+  display: block;
+  color: #5c564c;
+}
+
+.resident-detail-grid strong {
+  display: block;
+  margin-top: 5px;
+  font-family: var(--font-display);
+  font-size: 18px;
+  letter-spacing: -0.03em;
+}
+
+@keyframes slide-in-right {
+  to { transform: translateX(0); }
+}
+
+@media (max-width: 768px) {
+  .payment-row {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .payment-financials {
+    padding: 16px 0 0;
+    border-top: 2px dashed #9d968a;
+    border-left: 0;
+  }
+
+  .payment-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .drawer {
+    border-left: none;
+    border-top: 3px solid var(--ink);
+    top: 60px;
+    max-width: 100%;
+    transform: translateY(100%);
+    animation: slide-in-bottom var(--dur-normal) var(--ease) forwards;
+  }
+  @keyframes slide-in-bottom {
+    to { transform: translateY(0); }
+  }
+}
+
+@media (max-width: 640px) {
+  .payments-metrics,
+  .payment-financials {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .payment-room-details {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+
+  .payment-resident {
+    grid-column: 1 / -1;
+  }
+
+  .payment-room-details .status-tag {
+    justify-self: start;
+  }
+
+  .payment-history-item {
+    grid-template-columns: 1fr auto;
+  }
+
+  .payment-history-item > div:nth-child(2) {
+    grid-column: 1 / 2;
+  }
+
+  .payment-history-item > strong {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+}
+/* =========================================================
+   Step 5 — Rooms, room cards and the room drawer
+   ========================================================= */
+
+/* Room card entrance. `backwards` rather than `both` on purpose: rise-in ends
+   with transform: translateY(0), and a forwards fill would lock that in and
+   cancel the .room-card:hover lift. */
+.room-grid .room-card {
+  animation: rise-in var(--dur-normal) var(--ease) backwards;
+}
+
+.room-grid .room-card:nth-child(2) { animation-delay: 40ms; }
+.room-grid .room-card:nth-child(3) { animation-delay: 80ms; }
+.room-grid .room-card:nth-child(4) { animation-delay: 120ms; }
+.room-grid .room-card:nth-child(n + 5) { animation-delay: 160ms; }
+
+/* Room cards are real controls, so they need a visible keyboard focus ring. */
+.room-card:focus-visible,
+.building-card:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 3px;
+}
+
+/* Drawer section tabs */
+.drawer-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px clamp(20px, 4vw, 32px);
+  border-bottom: 3px solid var(--ink);
+  background: var(--paper);
+}
+
+.drawer-tabs .pill.active {
+  background: var(--ink);
+  color: var(--white);
+}
+
+/* Inline form validation / API error message */
+.field-error {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 2px solid var(--ink);
+  background: #ffe0dc;
+  color: #8e1d14;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+@media (max-width: 520px) {
+  .drawer {
+    max-width: 100%;
+  }
+}
+/* =========================================================
+   Shared motion + interaction feedback
+   ========================================================= */
+
+/* Every control gets a visible keyboard focus ring. */
+.btn-primary:focus-visible,
+.ghost-button:focus-visible,
+.nav-link:focus-visible,
+.pill:focus-visible,
+.retry-button:focus-visible,
+.modal-close:focus-visible,
+select:focus-visible,
+input:focus-visible,
+.building-card:focus-visible,
+.room-card:focus-visible,
+.payment-row button:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 3px;
+}
+
+/* Press feedback: the control sinks toward its resting shadow. */
+.btn-primary:active,
+.ghost-button:active,
+.retry-button:active,
+.pill:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+
+/* Busy/inactive state is shown by the control itself, never by colour alone. */
+.btn-primary:disabled,
+.ghost-button:disabled,
+.retry-button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+/* A status flip is noticeable rather than silently swapping colour. */
+.status-tag {
+  transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+
+/* Changed financial figures flash once, then settle. */
+@keyframes value-flash {
+  from { background: var(--yellow); }
+  to { background: transparent; }
+}
+
+.metric-card.flash strong,
+.analytics-card.flash strong {
+  animation: value-flash var(--dur-slow) var(--ease);
+}
+/* =========================================================
+   Metric grid entrance + progress bars
+   ========================================================= */
+
+/* Staggered entrance so a row of figures resolves left-to-right instead of
+   appearing at once. Capped at 6 children so long lists never feel slow. */
+.metrics-grid > * {
+  animation: rise-in var(--dur-normal) var(--ease) backwards;
+}
+
+.metrics-grid > *:nth-child(1) { animation-delay: 0ms; }
+.metrics-grid > *:nth-child(2) { animation-delay: 45ms; }
+.metrics-grid > *:nth-child(3) { animation-delay: 90ms; }
+.metrics-grid > *:nth-child(4) { animation-delay: 135ms; }
+.metrics-grid > *:nth-child(5) { animation-delay: 180ms; }
+.metrics-grid > *:nth-child(n + 6) { animation-delay: 225ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .metrics-grid > * {
+    animation: none;
+  }
+}
+
+/* Modal exit: fades the overlay and settles the dialog. */
+@keyframes overlay-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes box-out {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(8px) scale(0.98); }
+}
+
+.modal-overlay.closing { animation: overlay-out var(--dur-fast) var(--ease) forwards; }
+.modal-box.closing { animation: box-out var(--dur-fast) var(--ease) forwards; }
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-overlay.closing,
+  .modal-box.closing {
+    animation: none;
+  }
+}
+
+/* View transition: the page content settles in on navigation. Opacity/translate
+   only, so nothing reflows and no layout shift is introduced. */
+@keyframes view-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.content-wrap {
+  animation: view-in var(--dur-normal) var(--ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .content-wrap {
+    animation: none;
+  }
+}
+
+/* Drawer exit: the panel slides back out while the backdrop fades, mirroring
+   the modal so both overlays feel like the same system. */
+@keyframes drawer-out-right {
+  from { transform: translateX(0); }
+  to { transform: translateX(100%); }
+}
+
+/* Progress bars grow from zero on first paint, then transition width when the
+   backend value changes. --bar-width carries the real (backend-derived) width;
+   it is never faked. */
+/* Report sections settle in on arrival. Entrance only — no looping or
+   continuous motion over financial figures. */
+.report-section {
+  animation: rise-in var(--dur-normal) var(--ease) backwards;
+}
+
+.report-section:nth-of-type(1) { animation-delay: 0ms; }
+.report-section:nth-of-type(2) { animation-delay: 45ms; }
+.report-section:nth-of-type(3) { animation-delay: 90ms; }
+.report-section:nth-of-type(4) { animation-delay: 135ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .report-section {
+    animation: none;
+  }
+}
+
+.progress-track {
+  width: 100%;
+  height: 32px;
+  border: 3px solid var(--ink);
+  background: var(--paper);
+  box-shadow: 4px 4px 0 var(--ink);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-right: 3px solid var(--ink);
+  width: var(--bar-width, 0%);
+  animation: bar-grow var(--dur-slow) var(--ease) both;
+  transition: width var(--dur-slow) var(--ease);
+}
+
+.progress-fill.green { background: var(--green); }
+.progress-fill.blue { background: var(--blue); }
+
+@keyframes bar-grow {
+  from { width: 0; }
+  to { width: var(--bar-width, 0%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress-fill {
+    animation: none;
+    transition: none;
+  }
+}
+
+.drawer.closing { animation: drawer-out-right var(--dur-normal) var(--ease) forwards; }
+.drawer-backdrop.closing { animation: overlay-out var(--dur-normal) var(--ease) forwards; }
+
+/* On narrow screens the drawer enters from the bottom, so it must exit the same
+   way rather than sideways. */
+@media (max-width: 768px) {
+  .drawer.closing { animation-name: drawer-out-bottom; }
+}
+
+@keyframes drawer-out-bottom {
+  from { transform: translateY(0); }
+  to { transform: translateY(100%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drawer.closing,
+  .drawer-backdrop.closing {
+    animation: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .metric-card.flash strong,
+  .analytics-card.flash strong {
+    animation: none;
+  }
+
+  /* Hover lift is decorative and is never fired on touch anyway. */
+  .room-card:hover,
+  .metric-card:hover {
+    transform: none;
+  }
+}
+
+/* Touch: no hover state, but keep a clear press. */
+@media (hover: none) {
+  .room-card:active,
+  .metric-card:active,
+  .payment-row:active {
+    transform: translate(-1px, -1px);
+  }
+}

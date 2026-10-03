@@ -1,0 +1,78 @@
+:root {
+  font-family: 'Inter', sans-serif;
+  color: #1a1a1a;
+  background: #f5f0e8;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  --paper: #f5f0e8;
+  --ink: #1a1a1a;
+  --yellow: #ffcc00;
+  --blue: #0055ff;
+  --red: #e63b2e;
+  --green: #16845b;
+  --white: #fffdf8;
+  --line: 2px solid var(--ink);
+  --hard-shadow: 5px 5px 0 var(--ink);
+  --font-display: 'Space Grotesk', 'Inter', sans-serif;
+
+  /* One motion system. Every transition/animation in the app picks a tier
+     rather than inventing a duration, so pacing stays consistent. */
+  --dur-fast: 150ms;    /* hover, press, filter change, small feedback */
+  --dur-normal: 220ms; /* cards, modal, drawer, page transition */
+  --dur-slow: 450ms;   /* progress bars, value transitions */
+  --ease: cubic-bezier(0.2, 0, 0.2, 1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  min-height: 100%;
+  background: var(--paper);
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  color: inherit;
+}
+
+button:focus-visible,
+input:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 3px;
+}
+
+::selection {
+  color: var(--ink);
+  background: var(--yellow);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

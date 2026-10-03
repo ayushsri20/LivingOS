@@ -33,7 +33,15 @@ if [ -d "staticfiles/rental" ]; then
 fi
 
 echo "=== Running database migrations ==="
-python manage.py migrate --noinput
+# Migrations are NOT run automatically on build. Against a production database
+# this must be a deliberate step, so it is opt-in:
+#   RUN_MIGRATIONS=true ./build.sh
+# or run `python manage.py migrate` separately from the Render shell.
+if [ "${RUN_MIGRATIONS:-false}" = "true" ]; then
+    python manage.py migrate --noinput
+else
+    echo "Skipped (set RUN_MIGRATIONS=true to apply migrations during build)"
+fi
 
 echo "=== WSGI Verification ==="
 python -c "import os; os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'hotel_project.settings'); from hotel_project.wsgi import application; print('✓ WSGI application loaded successfully')"
