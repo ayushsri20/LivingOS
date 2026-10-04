@@ -7,6 +7,56 @@ export function getCookie(name) {
 }
 
 /**
+ * CSRF token held in memory for the page's lifetime.
+ *
+ * On the same origin (local dev) the `csrftoken` cookie is readable and this
+ * stays null. When the app is served from a different origin than the API
+ * (Vercel -> Render) the cookie belongs to the API's domain, so
+ * `document.cookie` can never see it — that is why the token is fetched from
+ * GET /api/csrf/ and kept here instead.
+ */
+let csrfToken = null
+
+/** Drop the cached token; needed whenever Django rotates it (e.g. on login). */
+export function resetCsrfToken() {
+  csrfToken = null
+}
+
+/**
+ * Return a usable CSRF token, fetching one from the API only if the cookie
+ * approach cannot work. Never throws on the local cookie path.
+ */
+export async function fetchCsrfToken() {
+  if (csrfToken) return csrfToken
+
+  // Same-origin case: keep using the cookie exactly as before.
+  const cookieToken = getCookie('csrftoken')
+  if (cookieToken) {
+    csrfToken = cookieToken
+    return csrfToken
+  }
+
+  // Cross-origin case: the cookie is on the API's domain, so ask for the token.
+  const response = await fetch(`${API_BASE}/api/csrf/`, {
+    method: 'GET',
+    credentials: 'include',
+    cache: 'no-store',
+  })
+  if (!response.ok) {
+    throw new Error('Unable to obtain a CSRF token from the server.')
+  }
+  const data = await response.json()
+  csrfToken = data.csrfToken || ''
+  if (!csrfToken) {
+    throw new Error('The server did not return a CSRF token.')
+  }
+  return csrfToken
+}
+
+/** Methods Django's CSRF middleware actually validates. */
+const CSRF_SAFE_METHODS = ['GET', 'HEAD', 'OPTIONS', 'TRACE']
+
+/**
  * Build an Error carrying the HTTP status (and backend payload when available),
  * so callers can tell "request failed" apart from "no data returned".
  */
@@ -35,6 +85,13 @@ function extractMessage(payload, status) {
 export async function apiFetch(path, options = {}) {
   const { headers: callerHeaders, body, ...rest } = options
   const isFormData = body instanceof FormData
+  const method = String(rest.method || 'GET').toUpperCase()
+
+  // Only unsafe methods are validated by Django's CSRF middleware, so a token
+  // is only fetched when one is actually needed.
+  if (!CSRF_SAFE_METHODS.includes(method)) {
+    await fetchCsrfToken()
+  }
 
   const response = await fetch(`${API_BASE}${path}`, {
     cache: 'no-store',
@@ -46,7 +103,7 @@ export async function apiFetch(path, options = {}) {
     headers: {
       ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       ...(callerHeaders || {}),
-      'X-CSRFToken': getCookie('csrftoken') || '',
+      'X-CSRFToken': csrfToken || getCookie('csrftoken') || '',
     },
     body,
   })
@@ -102,25 +159,22 @@ export function buildLoginRequestBody({ username, password }) {
 }
 
 export async function login({ username, password }) {
-  const csrfResponse = await fetch(`${API_BASE}/login/`, {
-    method: 'GET',
-    credentials: 'include',
-    // A cached login page can carry a stale csrfmiddlewaretoken.
-    cache: 'no-store',
-  })
-  if (!csrfResponse.ok) {
-    throw new Error('Unable to start a secure login request.')
-  }
+  // Get a CSRF token first. Locally this still comes from the cookie; when the
+  // app and API are on different origins it comes from GET /api/csrf/.
+  const token = await fetchCsrfToken()
 
   const response = await fetch(`${API_BASE}/login/`, {
     method: 'POST',
     credentials: 'include',
     redirect: 'manual',
     headers: {
-      'X-CSRFToken': getCookie('csrftoken') || '',
+      'X-CSRFToken': token,
     },
     body: buildLoginRequestBody({ username, password }),
   })
+
+  // Django rotates the CSRF token on login, so the cached one is now stale.
+  resetCsrfToken()
 
   if (response.type === 'opaqueredirect' || response.status === 302) return
   if (response.status === 403) {

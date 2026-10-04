@@ -32,6 +32,7 @@ urlpatterns = [
     path('api/room/<int:room_id>/update/', views.update_room, name='update_room'),
     path('api/room/add/', views.add_room, name='add_room'),
     path('api/room/<int:room_id>/delete/', views.delete_room, name='delete_room'),
+    path('api/csrf/', views.api_csrf, name='api_csrf'),
     path('api/rooms/', views.api_rooms, name='api_rooms'),
     path('api/rooms/<int:room_id>/', views.api_room_detail, name='api_room_detail'),
     path('api/rooms/<int:room_id>/generate-bill/', views.api_generate_bill, name='api_generate_bill'),

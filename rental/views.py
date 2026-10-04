@@ -3,7 +3,8 @@ from django.conf import settings
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.decorators.http import require_http_methods
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
+from django.middleware.csrf import get_token
 from django.http import JsonResponse
 from django.contrib.auth.models import User
 import json
@@ -2058,6 +2059,27 @@ def _get_room_billing_snapshot(room):
         'payment_status': status,
         'total_bill': float(total_bill),
     }
+
+@ensure_csrf_cookie
+@require_http_methods(["GET"])
+def api_csrf(request):
+    """
+    Hand the browser a CSRF token it can actually read.
+
+    When the React app is served from a different origin than this API (Vercel
+    -> Render), the `csrftoken` cookie is set on the API's domain and is
+    therefore invisible to `document.cookie` on the page's origin. The client
+    then sends an empty X-CSRFToken header, which Django rejects as "incorrect
+    length".
+
+    This endpoint returns the token in the response body so the client can send
+    it explicitly. It uses Django's own `get_token()` and `ensure_csrf_cookie`,
+    so the CSRF mechanism is unchanged — the token is still masked/verified by
+    CsrfViewMiddleware, and the cookie is still set. Read-only: no database
+    access and no session or authentication changes.
+    """
+    return JsonResponse({'csrfToken': get_token(request)})
+
 
 @login_required(login_url='login')
 @user_passes_test(is_admin)
