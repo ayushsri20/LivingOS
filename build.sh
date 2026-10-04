@@ -43,6 +43,14 @@ else
     echo "Skipped (set RUN_MIGRATIONS=true to apply migrations during build)"
 fi
 
+echo "=== Ensuring production superuser ==="
+# Idempotent. Skips cleanly when DJANGO_SUPERUSER_* are not set (local builds
+# and CI), creates the user on the first production deploy, and is a no-op on
+# every deploy after that. Render Free provides no Shell or Pre-Deploy command,
+# so this build step is the only place it can run. A conflicting non-superuser
+# account fails the build rather than being modified.
+python manage.py ensure_superuser
+
 echo "=== WSGI Verification ==="
 python -c "import os; os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'hotel_project.settings'); from hotel_project.wsgi import application; print('✓ WSGI application loaded successfully')"
 
