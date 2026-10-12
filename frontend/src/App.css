@@ -8,7 +8,7 @@
 
 .topbar {
   min-height: 80px;
-  padding: 15px clamp(18px, 4vw, 56px);
+  padding: 15px clamp(18px, 4vw, 48px);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -64,7 +64,7 @@
 .brand-subtitle,
 .muted,
 .resident-role {
-  color: #5c564c;
+  color: var(--muted-text);
   font-size: 13px;
 }
 
@@ -210,7 +210,7 @@
 
 .metrics-error {
   padding-top: 10px;
-  color: #8e1d14;
+  color: var(--error);
   font-size: 11px;
   font-weight: 700;
 }
@@ -259,15 +259,15 @@
 }
 
 .analytics-card.blue {
-  background: #e8efff;
+  background: var(--action-wash);
 }
 
 .analytics-card.red {
-  background: #ffe7e2;
+  background: var(--error-wash);
 }
 
 .analytics-card.green {
-  background: #e0f1e8;
+  background: var(--success-wash);
 }
 
 .analytics-card.yellow {
@@ -406,7 +406,7 @@
 /* Tertiary metadata (timestamp, count, scope). Deliberately unboxed and
    neutral: the yellow accent is reserved for primary actions and figures. */
 .section-head > span {
-  color: #5c564c;
+  color: var(--muted-text);
   font-size: 12px;
   font-weight: 700;
   text-align: right;
@@ -421,12 +421,12 @@
 }
 
 .toast.success {
-  background: #d8f0e5;
+  background: var(--success-wash);
 }
 
 .toast.error {
-  background: #ffe0dc;
-  color: #8e1d14;
+  background: var(--error-wash);
+  color: var(--error);
 }
 
 .room-grid {
@@ -482,7 +482,7 @@
 }
 
 .status-tag.partial {
-  background: #8a6a00;
+  background: var(--warning-ink);
 }
 
 .status-tag.vacant {
@@ -577,43 +577,15 @@
   font-weight: 700;
 }
 
-.drawer {
-  position: fixed;
-  z-index: 11;
-  inset: 0 0 0 auto;
-  width: min(520px, 100%);
-  max-width: 100vw;
-  height: 100dvh;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: 24px;
-  border-left: 3px solid var(--ink);
-  background: var(--paper);
-  box-shadow: -8px 0 0 rgb(26 26 26 / 18%);
-  animation: slide-in var(--dur-normal) var(--ease) both;
-}
+/* NOTE: The room drawer overlay and shell are declared once in
+   components.css (.drawer-backdrop z-index 120, .drawer z-index 121).
+   Duplicate legacy rules here are intentionally removed so the drawer can
+   never be rendered beneath the mobile tabbar (60), the more sheet (75),
+   or the app topbar (50). */
 
-.drawer-backdrop {
-  position: fixed;
-  z-index: 10;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  border: 0;
-  background: rgb(26 26 26 / 48%);
-  cursor: default;
-  animation: backdrop-in var(--dur-normal) var(--ease) both;
-}
-
-.drawer-header {
-  position: sticky;
-  top: -24px;
-  z-index: 2;
-  margin: -24px -24px 18px;
-  padding: 20px 24px;
-  border-bottom: var(--line);
-  background: var(--yellow);
-}
+/* NOTE: .drawer-header is declared once in components.css (sticky, z-index 2).
+   Duplicate legacy rules here are intentionally removed so the drawer close
+   button remains reachable above scrolling content on every viewport. */
 
 .drawer-header h2 {
   font-size: 30px;
@@ -628,9 +600,9 @@
 .detail-loading {
   margin: 6px 0 12px;
   padding: 10px;
-  border: 1px dashed #9d968a;
+  border: 1px dashed var(--muted-text);
   background: var(--paper);
-  color: #5c564c;
+  color: var(--muted-text);
   font-size: 12px;
 }
 
@@ -647,7 +619,7 @@
   justify-content: space-between;
   gap: 14px;
   padding: 8px 0;
-  border-bottom: 1px dashed #9d968a;
+  border-bottom: 1px dashed var(--muted-text);
   font-size: 13px;
 }
 
@@ -679,7 +651,7 @@
 
 .tenant-item span,
 .history-row span {
-  color: #5c564c;
+  color: var(--muted-text);
 }
 
 .document-list {
@@ -702,7 +674,7 @@
 
 .empty-document,
 .empty-state {
-  color: #5c564c;
+  color: var(--muted-text);
   font-size: 12px;
 }
 
@@ -775,7 +747,7 @@
   place-items: center;
   padding: 22px;
   background:
-    linear-gradient(135deg, transparent 49.6%, rgb(26 26 26 / 5%) 50%, transparent 50.4%),
+    linear-gradient(135deg, transparent 49.6%, var(--hairline-faint) 50%, transparent 50.4%),
     var(--paper);
 }
 
@@ -813,7 +785,7 @@
 
 .login-panel .status.error {
   margin-top: 14px;
-  color: #8e1d14;
+  color: var(--error);
   font-size: 13px;
   font-weight: 700;
 }
@@ -839,7 +811,7 @@
 
 .error-state span {
   overflow-wrap: anywhere;
-  color: #8e1d14;
+  color: var(--error);
 }
 
 .mobile-nav {
@@ -1010,12 +982,11 @@
   }
 
   .drawer {
-    padding: 17px;
     border-left-width: 2px;
   }
 
   .drawer-backdrop {
-    background: rgb(26 26 26 / 52%);
+    background: var(--hairline-strong);
   }
 
   .mobile-nav {
@@ -1046,8 +1017,8 @@
   }
 
   .drawer-header {
-    top: -17px;
-    margin: -17px -17px 15px;
+    top: 0;
+    margin: 0 0 15px;
     padding: 15px 17px;
   }
 

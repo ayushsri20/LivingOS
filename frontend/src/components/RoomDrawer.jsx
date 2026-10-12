@@ -50,6 +50,9 @@ export default function RoomDrawer({ room, onClose, onRefresh, onToast, onPaymen
   const [guestLoaded, setGuestLoaded] = useState(false)
 
   const closeRef = useRef(null)
+  const drawerRef = useRef(null)
+  const previousFocusRef = useRef(null)
+  const closedRef = useRef(false)
   const roomId = room?.id
   const roomNumber = getRoomNumber(room)
   const hasBill = room?.current_reading !== null && room?.current_reading !== undefined
@@ -57,21 +60,53 @@ export default function RoomDrawer({ room, onClose, onRefresh, onToast, onPaymen
   const residentName = room?.resident && room.resident !== 'No resident' ? room.resident : 'Vacant Room'
 
   // Plays the exit transition before the parent unmounts the drawer, so closing
-  // does not snap away. Same pattern as the shared Modal.
+  // does not snap away. Guarded so the close button + backdrop + Escape key can
+  // never fire onClose twice for the same gesture.
   const [closing, setClosing] = useState(false)
   const closeTimer = useRef(null)
   const requestClose = useCallback(() => {
-    if (closing) return
+    if (closing || closedRef.current) return
+    closedRef.current = true
     setClosing(true)
     closeTimer.current = setTimeout(onClose, 180)
   }, [closing, onClose])
 
+  // Focus the drawer shell once on open and return focus to the room trigger
+  // when it closes, so Tab and screen-reader users never land behind the panel.
   useEffect(() => {
+    previousFocusRef.current = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null
     closeRef.current?.focus()
-    const onKeyDown = (event) => { if (event.key === 'Escape') requestClose() }
+    return () => {
+      if (previousFocusRef.current instanceof HTMLElement) {
+        previousFocusRef.current.focus()
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape' && !closing) {
+        event.preventDefault()
+        requestClose()
+      }
+    }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [requestClose])
+  }, [requestClose, closing])
+
+  // Stop the page scrolling/scaling while the drawer owns the viewport.
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow
+    const previousOverscroll = document.documentElement.style.overscrollBehavior
+    document.body.style.overflow = 'hidden'
+    document.documentElement.style.overscrollBehavior = 'none'
+    return () => {
+      document.body.style.overflow = previousOverflow
+      document.documentElement.style.overscrollBehavior = previousOverscroll
+    }
+  }, [])
 
   useEffect(() => () => clearTimeout(closeTimer.current), [])
 
@@ -201,8 +236,20 @@ export default function RoomDrawer({ room, onClose, onRefresh, onToast, onPaymen
 
   return (
     <>
-      <div className={`drawer-backdrop${closing ? ' closing' : ''}`} onClick={requestClose} aria-hidden="true" />
-      <aside className={`drawer${closing ? ' closing' : ''}`} role="dialog" aria-modal="true" aria-label={`Room ${roomNumber} details`}>
+      <button
+        type="button"
+        className={`drawer-backdrop${closing ? ' closing' : ''}`}
+        onClick={requestClose}
+        aria-label="Close room details"
+        tabIndex={-1}
+      />
+      <aside
+        ref={drawerRef}
+        className={`drawer${closing ? ' closing' : ''}`}
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Room ${roomNumber} details`}
+      >
         <div className="drawer-header">
           <div>
             <span className="eyebrow" style={{ color: 'var(--ink)' }}>BUILDING {room?.building || '—'}</span>
@@ -215,12 +262,26 @@ export default function RoomDrawer({ room, onClose, onRefresh, onToast, onPaymen
             type="button"
             className="ghost-button"
             onClick={requestClose}
-            style={{ padding: '8px 12px', fontSize: 20 }}
+            style={{ padding: '8px 12px', fontSize: 20, minHeight: 44, minWidth: 44 }}
             aria-label="Close room details"
           >
             ×
           </button>
         </div>
+
+        {tab === 'profile' ? (
+          <div className="drawer-backbar">
+            <button
+              type="button"
+              className="ghost-button"
+              onClick={() => setTab('overview')}
+              aria-label="Back to room overview"
+            >
+              ← Back
+            </button>
+            <span className="eyebrow" style={{ color: '#5c564c' }}>RESIDENT SUB-VIEW</span>
+          </div>
+        ) : null}
 
         <div className="drawer-tabs" role="tablist" aria-label="Room sections">
           <button
@@ -354,14 +415,14 @@ export default function RoomDrawer({ room, onClose, onRefresh, onToast, onPaymen
                     color={(room?.outstanding_amount ?? 0) > 0 ? 'red' : 'blue'}
                   />
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 16 }}>
+                <div className="drawer-meter-grid">
                   <Detail label="Prev reading" value={room?.previous_reading ?? '—'} />
                   <Detail label="Curr reading" value={room?.current_reading ?? '—'} />
                   <Detail label="Units used" value={room?.units_used ?? '—'} />
                 </div>
-                <div style={{ padding: '14px 16px', background: 'var(--yellow)', border: '3px solid var(--ink)', boxShadow: '4px 4px 0 var(--ink)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-                  <span style={{ fontWeight: 700, textTransform: 'uppercase', fontSize: 12, letterSpacing: '0.04em' }}>Total room bill</span>
-                  <strong style={{ fontSize: 26, fontFamily: 'var(--font-display)', letterSpacing: '-0.03em' }}>{money(room?.total_bill)}</strong>
+                <div className="drawer-bill-total">
+                  <span>Total room bill</span>
+                  <strong>{money(room?.total_bill)}</strong>
                 </div>
               </div>
 
@@ -418,9 +479,10 @@ export default function RoomDrawer({ room, onClose, onRefresh, onToast, onPaymen
                       id="drawer-amount"
                       name="amount"
                       type="number"
-                      inputMode="decimal"
+                      min="0"
                       step="0.01"
-                      min="0.01"
+                      inputMode="decimal"
+                      autoComplete="off"
                       className="field-input"
                       placeholder="0.00"
                       value={amount}

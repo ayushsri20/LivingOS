@@ -43,6 +43,14 @@ def dashboard_metrics_api(request):
         acc_pending_amount = Decimal('0.00')
         
         for room in all_rooms:
+            # A vacant room is owed nothing: with no resident there is nobody to
+            # bill. Including its rent here inflated accounts receivable by the
+            # full asking rent of every empty room and made this KPI disagree
+            # with /api/reports/monthly/, which bills rent only where a
+            # MonthlyPayment exists. Occupancy is reported separately below.
+            if not Guest.objects.filter(room=room, is_active=True).exists():
+                continue
+
             # Get monthly payment for current month
             monthly_payment = MonthlyPayment.objects.filter(
                 room=room,

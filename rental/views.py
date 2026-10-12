@@ -2034,6 +2034,18 @@ def _get_room_billing_snapshot(room):
     collected = Decimal(str(monthly_payment.paid_amount)) if monthly_payment else Decimal('0.00')
     outstanding = max(Decimal('0.00'), total_bill - collected)
 
+    # A vacant room is owed nothing. There is no resident to bill, so no rent and
+    # no electricity are receivable — the meter readings below are still reported
+    # so the drawer can show the meter and generate a bill, but counting an empty
+    # room's rent as money owed inflated accounts receivable and contradicted
+    # /api/reports/monthly/, which bills rent only where a MonthlyPayment exists.
+    if active_guest is None:
+        rent_amount = Decimal('0.00')
+        electricity_amount = Decimal('0.00')
+        total_bill = Decimal('0.00')
+        collected = Decimal('0.00')
+        outstanding = Decimal('0.00')
+
     if collected == 0:
         status = 'DUE'
     elif collected >= total_bill:

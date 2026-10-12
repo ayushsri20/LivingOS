@@ -37,11 +37,29 @@ export async function fetchCsrfToken() {
   }
 
   // Cross-origin case: the cookie is on the API's domain, so ask for the token.
-  const response = await fetch(`${API_BASE}/api/csrf/`, {
-    method: 'GET',
-    credentials: 'include',
-    cache: 'no-store',
-  })
+  let response
+  try {
+    response = await fetch(`${API_BASE}/api/csrf/`, {
+      method: 'GET',
+      credentials: 'include',
+      cache: 'no-store',
+    })
+  } catch {
+    // The network request itself failed. During local dev this almost always
+    // means the Vite dev proxy could not reach the Django backend on
+    // :8000, which the proxy reports as a 502 Bad Gateway. Surface that
+    // explicitly so the message points at the real cause instead of CSRF.
+    throw new Error(
+      'Cannot reach the backend (Bad Gateway). Make sure the Django server is running on port 8000.',
+    )
+  }
+  if (response.status === 502 || response.status === 503 || response.status === 504) {
+    // A gateway error means the proxy reached nothing upstream — a backend
+    // outage, not a CSRF problem. Give the actionable reason.
+    throw new Error(
+      'Backend unavailable (502 Bad Gateway). Start the Django server on port 8000 and reload.',
+    )
+  }
   if (!response.ok) {
     throw new Error('Unable to obtain a CSRF token from the server.')
   }

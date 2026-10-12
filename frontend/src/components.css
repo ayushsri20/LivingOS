@@ -4,12 +4,15 @@
 
 /* Page shell */
 .page-shell {
+  position: relative;
+  isolation: isolate;
   width: 100%;
   min-height: 100vh;
   background: var(--paper);
 }
 
-/* Topbar (reused across pages) */
+/* Topbar (reused across pages). Own stacking context so the architectural
+   banner/SVG layer can never swallow header, drawer, or tabbar taps. */
 .topbar {
   min-height: 80px;
   padding: 15px clamp(18px, 4vw, 56px);
@@ -22,6 +25,7 @@
   position: sticky;
   top: 0;
   z-index: 50;
+  isolation: isolate;
 }
 
 .brand-wrap {
@@ -53,7 +57,7 @@
 }
 
 .brand-subtitle {
-  color: #5c564c;
+  color: var(--muted-text);
   font-size: 12px;
 }
 
@@ -134,7 +138,7 @@
 
 /* Page header banner */
 .page-banner {
-  padding: clamp(20px, 3vw, 36px) clamp(20px, 3vw, 36px);
+  padding: clamp(16px, 2.5vw, 30px) clamp(18px, 4vw, 48px);
   border: 3px solid var(--ink);
   background: var(--yellow);
   box-shadow: 8px 8px 0 var(--ink);
@@ -144,6 +148,18 @@
   justify-content: space-between;
   gap: 20px;
   flex-wrap: wrap;
+}
+
+/* --- Header -> hero transition --------------------------------------------
+   The Panesar artwork sits directly above the Dashboard hero. Left alone, the
+   nav row's own gap plus .content-wrap's generous top padding produced a
+   41-64px jump, which read as two unrelated blocks. Trimming only the top
+   padding makes the hero the second architectural surface of the header rather
+   than a new floating card; the bottom padding is untouched so the space below
+   the dashboard stays exactly as it was. `data-view` is the established hook,
+   so no other page's spacing moves. */
+.content-wrap[data-view="dashboard"] {
+  padding-top: 12px;
 }
 
 .page-banner h1 {
@@ -191,7 +207,7 @@
    accent stays reserved for primary actions and figures. App.css declares the
    effective rule; this keeps the base layer consistent. */
 .section-head > span {
-  color: #5c564c;
+  color: var(--muted-text);
   font-size: 12px;
   font-weight: 700;
   text-align: right;
@@ -207,9 +223,9 @@
   font-size: 14px;
 }
 
-.toast.success { background: #d8f0e5; }
-.toast.error { background: #ffe0dc; color: #8e1d14; }
-.toast.info { background: #e8efff; }
+.toast.success { background: var(--success-wash); }
+.toast.error { background: var(--error-wash); color: var(--error); }
+.toast.info { background: var(--action-wash); }
 
 /* Loading & empty states */
 .loading-shell {
@@ -217,16 +233,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #5c564c;
+  color: var(--muted-text);
   font-weight: 700;
   font-size: 14px;
 }
 
 .empty-state {
   padding: 32px;
-  border: 1px dashed #9d968a;
+  border: 1px dashed var(--muted-text);
   text-align: center;
-  color: #5c564c;
+  color: var(--muted-text);
   font-size: 14px;
 }
 
@@ -251,12 +267,12 @@
 
 .data-table td {
   padding: 10px 12px;
-  border-bottom: 1px dashed #9d968a;
+  border-bottom: 1px dashed var(--muted-text);
   vertical-align: middle;
 }
 
 .data-table tbody tr:hover {
-  background: rgba(255, 204, 0, 0.08);
+  background: var(--gold-wash);
 }
 
 /* Card surface */
@@ -286,10 +302,10 @@
 }
 
 .status-tag.paid { background: var(--green); }
-.status-tag.partial { background: #8a6a00; }
+.status-tag.partial { background: var(--warning-ink); }
 .status-tag.vacant { background: var(--blue); }
 .status-tag.due { background: var(--red); }
-.status-tag.pending { background: #9d968a; }
+.status-tag.pending { background: var(--muted-text); }
 
 /* Primary action button */
 .btn-primary {
@@ -380,7 +396,7 @@ select.field-input {
   position: fixed;
   inset: 0;
   z-index: 100;
-  background: rgba(26, 26, 26, 0.54);
+  background: var(--hairline-strong);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -438,9 +454,65 @@ select.field-input {
   display: flex;
   gap: 10px;
   justify-content: flex-end;
+  flex-wrap: wrap;
   margin-top: 20px;
   padding-top: 16px;
   border-top: var(--line);
+}
+
+/* Unsaved-draft guard: explicit Keep editing vs Discard so a backdrop or
+   Escape tap can never silently eat a typed form. */
+.modal-discard {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border: 2px solid var(--ink);
+  background: var(--gold-wash);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.modal-discard-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+/* Dense allocation/expense forms: 2 columns on wide screens, one column on
+   narrow phones so two small inputs never sit side by side at 375px. */
+.resident-fields-grid,
+.tenancy-fields-grid,
+.expense-fields-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.resident-fields-grid,
+.expense-fields-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.tenancy-fields-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 560px) {
+  .resident-fields-grid,
+  .tenancy-fields-grid,
+  .expense-fields-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Expense paid toggle: stays a 44px touch row under the user's thumb. */
+.expense-paid-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 /* Pill filter buttons */
@@ -513,9 +585,9 @@ select.field-input {
   letter-spacing: -0.04em;
 }
 
-.metric-card.blue { background: #e8efff; }
-.metric-card.green { background: #e0f1e8; }
-.metric-card.red { background: #ffe7e2; }
+.metric-card.blue { background: var(--action-wash); }
+.metric-card.green { background: var(--success-wash); }
+.metric-card.red { background: var(--error-wash); }
 .metric-card.yellow { background: var(--yellow); }
 
 /* Animations (shared) */
@@ -671,7 +743,7 @@ select.field-input {
   .payment-financials {
     padding: 16px 0 0;
     border-left: 0;
-    border-top: 2px dashed #9d968a;
+    border-top: 2px dashed var(--muted-text);
   }
 }
 
@@ -691,7 +763,7 @@ select.field-input {
 .payment-financials span,
 .payment-history-item .eyebrow {
   display: block;
-  color: #5c564c;
+  color: var(--muted-text);
 }
 
 .payment-room-details strong {
@@ -709,7 +781,7 @@ select.field-input {
 .payment-financials {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   padding-left: 18px;
-  border-left: 2px dashed #9d968a;
+  border-left: 2px dashed var(--muted-text);
 }
 
 .payment-financials span {
@@ -727,8 +799,8 @@ select.field-input {
   letter-spacing: -0.03em;
 }
 
-.payment-collected { color: #176b45; }
-.payment-outstanding { color: #a82d23; }
+.payment-collected { color: var(--success-ink); }
+.payment-outstanding { color: var(--error); }
 
 .payment-actions {
   grid-template-columns: 1fr;
@@ -743,7 +815,7 @@ select.field-input {
 .payment-history-panel {
   grid-column: 1 / -1;
   padding-top: 16px;
-  border-top: 2px dashed #9d968a;
+  border-top: 2px dashed var(--muted-text);
 }
 
 .payment-history-list {
@@ -778,8 +850,8 @@ select.field-input {
 .drawer-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(26, 26, 26, 0.4);
-  z-index: 100;
+  background: var(--hairline);
+  z-index: 120;
   animation: backdrop-in var(--dur-normal) var(--ease) forwards;
 }
 
@@ -792,8 +864,8 @@ select.field-input {
   max-width: 480px;
   background: var(--paper);
   border-left: 3px solid var(--ink);
-  box-shadow: -8px 0 0 rgba(26, 26, 26, 0.1);
-  z-index: 101;
+  box-shadow: -8px 0 0 var(--hairline-faint);
+  z-index: 121;
   display: flex;
   flex-direction: column;
   transform: translateX(100%);
@@ -801,11 +873,15 @@ select.field-input {
 }
 
 .drawer-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
   padding: 24px clamp(20px, 4vw, 32px);
   border-bottom: 3px solid var(--ink);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
   background: var(--yellow);
 }
 
@@ -842,10 +918,115 @@ select.field-input {
 .resident-profile-card p {
   margin: 16px 0 0;
   padding-top: 16px;
-  border-top: 2px dashed #9d968a;
-  color: #5c564c;
+  border-top: 2px dashed var(--muted-text);
+  color: var(--muted-text);
   font-size: 13px;
   font-weight: 700;
+  line-height: 1.5;
+}
+
+.tenant-profile-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.resident-profile-action {
+  display: flex;
+  width: 100%;
+  min-height: 44px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 14px;
+  padding: 8px 14px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.resident-profile-action:hover {
+  background: var(--yellow);
+}
+
+.tenant-profile-section {
+  margin-bottom: 18px;
+}
+
+.tenant-profile-section h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 20px;
+}
+
+.tenant-profile-section .resident-profile-heading h3 {
+  margin-top: 4px;
+  font-size: 28px;
+}
+
+.tenant-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px 20px;
+}
+
+.tenant-profile-grid > div {
+  min-width: 0;
+}
+
+.tenant-profile-grid .eyebrow {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.tenant-profile-grid strong {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.tenant-profile-wide {
+  grid-column: 1 / -1;
+}
+
+.tenant-profile-note {
+  margin: 16px 0 0;
+  color: var(--muted-text);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.tenant-profile-records {
+  display: grid;
+  gap: 12px;
+}
+
+.tenant-profile-record {
+  padding: 14px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+}
+
+.tenant-profile-record-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.tenant-profile-record-detail {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--muted-text);
+  overflow-wrap: anywhere;
+  font-size: 12px;
   line-height: 1.5;
 }
 
@@ -853,6 +1034,21 @@ select.field-input {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+}
+
+@media (max-width: 560px) {
+  .tenant-profile-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 12px;
+  }
+
+  .tenant-profile-toolbar {
+    align-items: flex-start;
+  }
+
+  .resident-detail-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .resident-detail-grid > div {
@@ -863,7 +1059,7 @@ select.field-input {
 
 .resident-detail-grid .eyebrow {
   display: block;
-  color: #5c564c;
+  color: var(--muted-text);
 }
 
 .resident-detail-grid strong {
@@ -872,6 +1068,51 @@ select.field-input {
   font-family: var(--font-display);
   font-size: 18px;
   letter-spacing: -0.03em;
+}
+
+/* Billing + payment forms inside the drawer: inline two-up rows only where
+   two short fields still fit a 375px phone, never a squeezed three-up row. */
+.drawer-meter-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.drawer-bill-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--yellow);
+  border: 3px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+
+.drawer-bill-total span {
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+.drawer-bill-total strong {
+  font-size: 26px;
+  font-family: var(--font-display);
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 560px) {
+  .drawer-meter-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .drawer-bill-total {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
 }
 
 @keyframes slide-in-right {
@@ -886,7 +1127,7 @@ select.field-input {
 
   .payment-financials {
     padding: 16px 0 0;
-    border-top: 2px dashed #9d968a;
+    border-top: 2px dashed var(--muted-text);
     border-left: 0;
   }
 
@@ -897,10 +1138,37 @@ select.field-input {
   .drawer {
     border-left: none;
     border-top: 3px solid var(--ink);
-    top: 60px;
+    top: 24px;
     max-width: 100%;
+    height: calc(100dvh - 24px);
+    max-height: calc(100dvh - 24px);
     transform: translateY(100%);
     animation: slide-in-bottom var(--dur-normal) var(--ease) forwards;
+  }
+
+  .drawer-content {
+    padding: 16px clamp(16px, 4vw, 24px) calc(24px + env(safe-area-inset-bottom));
+    scroll-padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  }
+
+  .drawer-header {
+    padding: 16px clamp(16px, 4vw, 24px);
+  }
+
+  .drawer-header h2 {
+    font-size: 24px;
+  }
+
+  .drawer-tabs {
+    padding: 10px clamp(16px, 4vw, 24px);
+    gap: 8px;
+  }
+
+  .drawer-tabs .pill {
+    flex: 1 1 0;
+    min-height: 44px;
+    justify-content: center;
+    text-align: center;
   }
   @keyframes slide-in-bottom {
     to { transform: translateY(0); }
@@ -982,8 +1250,8 @@ select.field-input {
   margin: 0 0 12px;
   padding: 10px 12px;
   border: 2px solid var(--ink);
-  background: #ffe0dc;
-  color: #8e1d14;
+  background: var(--error-wash);
+  color: var(--error);
   font-size: 13px;
   font-weight: 700;
 }
@@ -1192,6 +1460,60 @@ button:disabled {
   }
 }
 
+/* --- Dialog + drawer shells on phones: bottom-sheet feel, safe-area aware
+   bottom spacing, and a header/sub-view control that scrolls with content
+   rather than trapping the user at the top of a long form. --- */
+@media (max-width: 640px) {
+  .modal-overlay {
+    padding: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom));
+    align-items: flex-end;
+    touch-action: none;
+  }
+
+  .modal-box {
+    width: 100%;
+    max-height: calc(100dvh - 20px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    padding: 20px 18px calc(20px + env(safe-area-inset-bottom));
+    border-width: 2px;
+    box-shadow: 6px 6px 0 var(--ink);
+  }
+
+  .modal-header {
+    position: sticky;
+    top: -20px;
+    z-index: 2;
+    margin: -20px -18px 16px;
+    padding: 12px 18px;
+    background: var(--paper);
+    border-bottom: 2px solid var(--ink);
+  }
+
+  .modal-header h2 {
+    font-size: 18px;
+  }
+
+  .modal-close {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* Sub-view breadcrumb inside drawers: Back returns to the parent list; the
+   top-right × still exits the whole overlay. Both stay visible on scroll. */
+.drawer-backbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px clamp(20px, 4vw, 32px);
+  border-bottom: 1px solid var(--hairline);
+  background: var(--surface-sunken);
+}
+
+.drawer-backbar .ghost-button {
+  min-height: 44px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .metric-card.flash strong,
   .analytics-card.flash strong {
@@ -1211,5 +1533,1022 @@ button:disabled {
   .metric-card:active,
   .payment-row:active {
     transform: translate(-1px, -1px);
+  }
+}
+/* =========================================================
+   PHASE 1 / 2 / 3 STRUCTURAL RESTORE
+   ---------------------------------------------------------
+   These rules back markup that already exists in the JSX
+   (shared.jsx TopBar, App.jsx metric groups, StatRow and
+   building directory). Additive only: no selector above is
+   redefined, so existing visual behaviour is unchanged.
+   Values come from the existing Panesar tokens.
+   ========================================================= */
+
+/* --- Header: the brand lives in the Panesar artwork above, so the bar holds
+   the navigation only. The redundant `.topbar-brand` row and its button styles
+   were removed along with their markup; scripts/verify_ux_contract.py keeps
+   them from coming back. */
+
+.top-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.top-nav-list {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-width: 0;
+}
+
+.top-nav-item {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.top-nav-logout {
+  flex-shrink: 0;
+}
+
+/* Active section must not read by colour alone. */
+.nav-link.active {
+  position: relative;
+}
+
+.nav-link.active::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 3px;
+  height: 2px;
+  background: var(--ink);
+}
+
+/* --- Toasts: viewport-derived, so a 380px toast cannot overflow a 375px phone --- */
+.toast-region {
+  position: fixed;
+  top: 92px;
+  right: clamp(12px, 3vw, 24px);
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(380px, calc(100vw - 2 * clamp(12px, 3vw, 24px)));
+  pointer-events: none;
+}
+
+.toast-region .toast {
+  margin: 0;
+  pointer-events: auto;
+}
+
+/* --- Loading: answer "is it working?" twice, in text and in shape --- */
+.loading-shell {
+  position: relative;
+  gap: 12px;
+}
+
+.loading-shell::before {
+  content: '';
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--ink);
+  background: var(--champagne-gold);
+  animation: busy-pulse var(--dur-normal) var(--ease) infinite alternate;
+}
+
+/* Working indicator: a restrained brightness shift, not a spinner. */
+@keyframes busy-pulse {
+  from { opacity: 0.35; }
+  to   { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-shell::before { animation: none; opacity: 1; }
+}
+
+/* --- Dashboard: property state vs financial state --- */
+.metric-group {
+  margin-bottom: 22px;
+}
+
+.metric-group--finance {
+  padding-top: 20px;
+  border-top: 1px solid rgba(23, 23, 23, 0.15);
+}
+
+/* Rupee figures outrank their labels. */
+.metric-card--money strong {
+  font-size: clamp(22px, 3vw, 28px);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.metric-card--money span {
+  letter-spacing: 0.08em;
+  font-size: 10px;
+}
+
+/* --- StatRow: label supports, value leads --- */
+.stat-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 5px 0;
+}
+
+.stat-row-label {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted-text);
+  font-weight: 700;
+}
+
+.stat-row-value {
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* --- Building directory: identity / occupancy / money / action --- */
+.building-card-identity {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--muted-text);
+  font-weight: 700;
+}
+
+.building-card-name {
+  font-size: 26px;
+  line-height: 1.1;
+  font-weight: 800;
+  margin: 2px 0 10px;
+}
+
+.building-card-occupancy {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  font-size: 11px;
+  color: var(--muted-text);
+}
+
+.building-card-occupancy b {
+  font-size: 15px;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.building-card-stats {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(23, 23, 23, 0.15);
+}
+
+.building-card-action {
+  margin-top: 10px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+}
+
+/* --- Payments list --- */
+.payments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* --- Touch targets --- */
+@media (pointer: coarse) {
+  .nav-link,
+  .top-nav-logout {
+    min-height: 44px;
+  }
+}
+
+/* =========================================================
+   PHASE 3 / PHASE 4 DASHBOARD HIERARCHY
+   ---------------------------------------------------------
+   Backs the markup that already exists in App.jsx DashboardView
+   (dash-block, snapshot, collection, pulse, directory, facade)
+   and in shared.jsx TopBar (mobile-tabbar, more-menu).
+   Additive only: no selector above is redefined, so existing
+   visual behaviour is unchanged. Values come from the existing
+   Panesar tokens in index.css.
+   ========================================================= */
+
+/* --- Dashboard: four reading blocks, never an even wall --- */
+.dash-block {
+  /* The dashboard layout gap carries inter-block rhythm. */
+  min-width: 0;
+}
+
+/* More specific than the legacy rule, so the legacy bottom margin does not
+   double the layout gap. The legacy rule itself is untouched. */
+.dash-block.metric-group {
+  margin-bottom: 0;
+}
+
+/* Section head: rule-led, so the sections read as a console, not as cards. */
+.dash-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 12px;
+}
+
+.dash-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.dash-meta {
+  color: var(--muted-text);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* --- 1. Property snapshot: numbers with rules, never panels --- */
+.snapshot-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px 20px;
+}
+
+.snapshot-figure {
+  min-width: 0;
+  padding-top: 10px;
+  border-top: 2px solid var(--ink);
+}
+
+/* Inventory values are large but weight 700, so they never compete with the
+   page banner or the money totals. Tabular numerals keep columns aligned. */
+.snapshot-value {
+  display: block;
+  font-size: clamp(26px, 3.4vw, 40px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.snapshot-label {
+  display: block;
+  margin-top: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted-text);
+}
+
+.snapshot-note {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted-text);
+}
+
+/* --- 2. Monthly collection: the only rupees on screen --- */
+.dash-block.metric-group--finance {
+  margin-top: 6px;
+}
+
+.collection-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px 20px;
+}
+
+.collection-figure {
+  min-width: 0;
+  padding: 14px 0 0;
+  border-top: 1px solid var(--hairline-strong);
+}
+
+/* Label leads in tracked caps; the rupee value is the largest type on the
+   dashboard. Tones mark state on the value, never on a panel. */
+.collection-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted-text);
+}
+
+.collection-value {
+  display: block;
+  margin-top: 6px;
+  font-size: clamp(24px, 3.2vw, 34px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.collection-value.is-positive { color: var(--success-ink); }
+.collection-value.is-attention { color: var(--error-ink); }
+
+/* --- 3. Portfolio pulse: two compact bars --- */
+.pulse-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 24px;
+}
+
+.pulse-row {
+  min-width: 0;
+}
+
+.pulse-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.pulse-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.pulse-value {
+  font-size: 15px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.pulse-note {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--muted-text);
+}
+
+/* Slim variant: the dashboard bars are indication, not the chunky branded
+   progress control used for uploads elsewhere. */
+.progress-track--compact {
+  height: 10px;
+  border: 1px solid var(--ink);
+  box-shadow: none;
+  background: transparent;
+}
+
+.progress-track--compact .progress-fill {
+  border-right-width: 1px;
+}
+
+/* --- 4. Building directory: six architectural objects --- */
+.dir-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+/* The whole object is the control. Hairline border and flat surface: the
+   six-room facade carries the building's visual weight, not chrome. */
+.building-object {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 16px 14px;
+  border: var(--line);
+  background: var(--white);
+  box-shadow: 4px 4px 0 var(--ink);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+}
+
+.building-object:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 var(--ink);
+}
+
+.building-object:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+
+.building-object:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 3px;
+}
+
+/* Head: identity left, occupancy right. The name sets the scale for the card. */
+.building-object-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.building-object-name {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.building-object-occupancy {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted-text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Facade: exactly 3 across × 2 down, one cell per real room. Occupied cells
+   fill restrained action blue; vacant cells stay outlined and neutral. */
+.building-facade {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.facade-room {
+  aspect-ratio: 16 / 10;
+  border: 1.5px solid var(--ink);
+  background: transparent;
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.facade-room.is-occupied {
+  background: var(--action-blue);
+  border-color: var(--action-ink);
+}
+
+/* Foot: one status line and the route into Rooms. */
+.building-object-foot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--hairline);
+}
+
+.building-object-status {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--success-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.building-object-status.is-due {
+  color: var(--error-ink);
+}
+
+.building-object-action {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* Changed dashboard figures flash once, then settle — same keyframe family
+   as the metric cards elsewhere. */
+.snapshot-value.flash,
+.collection-value.flash,
+.pulse-value.flash {
+  animation: value-flash var(--dur-slow) var(--ease);
+}
+
+/* Architectural sketch leads each building tile at every viewport size. */
+.building-object-photo {
+  display: block;
+  position: relative;
+  margin: -16px -16px 0;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-bottom: var(--line);
+  background: #f4f0e7;
+}
+
+.building-object-photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.building-object-photo-name {
+  position: absolute;
+  left: 12px;
+  bottom: 10px;
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 800;
+  color: #fffdf8;
+  text-shadow: 0 1px 2px rgba(15, 23, 42, 0.9), 0 0 18px rgba(15, 23, 42, 0.55);
+}
+
+.building-object-caption {
+  display: block;
+  margin-top: -4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-text);
+}
+
+@media (max-width: 480px) {
+  .content-wrap[data-view="dashboard"] .building-object {
+    padding: 0 0 14px;
+    overflow: hidden;
+  }
+
+  .content-wrap[data-view="dashboard"] .building-object-photo {
+    margin: 0;
+    aspect-ratio: 16 / 8;
+    object-position: center 38%;
+  }
+
+  .building-object-photo-name {
+    font-size: 26px;
+  }
+
+  .content-wrap[data-view="dashboard"] .building-object-head,
+  .content-wrap[data-view="dashboard"] .building-facade,
+  .content-wrap[data-view="dashboard"] .building-object-foot {
+    margin-left: 14px;
+    margin-right: 14px;
+  }
+
+  .content-wrap[data-view="dashboard"] .building-object-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  /* The photo already names the building on phones, so the head keeps only
+     the occupancy line. */
+  .content-wrap[data-view="dashboard"] .building-object-name {
+    display: none;
+  }
+
+  /* Single-row six: exactly six indicators in one line. The facade grid is
+     3×2 on desktop; below 480px the same six cells flow in one row. */
+  .content-wrap[data-view="dashboard"] .building-facade {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .content-wrap[data-view="dashboard"] .facade-room {
+    aspect-ratio: 1 / 1;
+  }
+
+  .content-wrap[data-view="dashboard"] .building-object-caption {
+    margin: 2px 14px 0;
+  }
+}
+
+/* --- Mobile bottom bar: Home | Rooms | Payments | More --- */
+.mobile-tabbar {
+  display: none;
+}
+
+.more-menu {
+  display: none;
+}
+
+/* --- Mobile header: brand above, one scrollable nav row --- */
+@media (max-width: 900px) {
+  .topbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    padding: 8px 0;
+  }
+
+  .top-nav {
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding: 0 clamp(16px, 4vw, 32px);
+    gap: 8px;
+  }
+
+  .top-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .top-nav-list {
+    width: max-content;
+  }
+
+  .top-nav-item {
+    scroll-snap-align: center;
+  }
+
+  .top-nav-logout {
+    position: sticky;
+    right: clamp(14px, 4vw, 24px);
+  }
+}
+
+@media (max-width: 640px) {
+  .brand-subtitle { display: none; }
+  .toast-region { top: 108px; }
+}
+
+/* --- Dashboard responsive: hierarchy holds at every width --- */
+
+/* Tablet portrait: the directory drops to two columns before the tab bar
+   takes over, so cards never squeeze below a readable facade. */
+@media (max-width: 900px) {
+  .snapshot-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dir-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Phones: one-column directory, tighter figures. At this width the desktop
+   nav is replaced by the fixed bottom bar below. */
+@media (max-width: 640px) {
+  .snapshot-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 16px;
+  }
+
+  .collection-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .collection-figure {
+    padding-top: 10px;
+  }
+
+  .pulse-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dir-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .building-facade {
+    gap: 5px;
+  }
+}
+
+/* --- Phones only: snapshot reads as 2×2 compact cards, and the dashboard
+   reorders to Snapshot → Pulse → Collection → Directory. Desktop keeps DOM
+   order (Snapshot → Collection → Pulse → Directory); `order` below 480px
+   only re-presents it. Scoped to the dashboard view so no other page moves. */
+@media (max-width: 480px) {
+  .content-wrap[data-view="dashboard"] .dashboard-layout {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .content-wrap[data-view="dashboard"] .metric-group--property { order: 1; }
+  .content-wrap[data-view="dashboard"] .dash-block[aria-labelledby="dash-pulse"] { order: 2; }
+  .content-wrap[data-view="dashboard"] .metric-group--finance { order: 3; }
+  .content-wrap[data-view="dashboard"] .dash-block--directory { order: 4; }
+
+  .content-wrap[data-view="dashboard"] .snapshot-figure {
+    padding: 12px 12px 10px;
+    border: var(--line);
+    border-top: 2px solid var(--ink);
+    background: var(--white);
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+
+  .content-wrap[data-view="dashboard"] .snapshot-value {
+    font-size: 28px;
+  }
+}
+
+/* --- Phones only: the collection share bar. Same collected-against-expected
+   width the desktop pulse bar carries; decorative here because the three
+   figures above it are the readable values. Hidden on desktop. */
+.collection-share {
+  display: none;
+}
+
+@media (max-width: 480px) {
+  .content-wrap[data-view="dashboard"] .collection-share {
+    display: block;
+    height: 8px;
+    margin-top: 12px;
+    border: 1px solid var(--ink);
+    background: transparent;
+    overflow: hidden;
+  }
+
+  .collection-share-fill {
+    display: block;
+    height: 100%;
+    width: var(--bar-width, 0%);
+    background: var(--success);
+  }
+}
+
+/* --- Phones only: the occupancy dial and breakdown. Hidden on desktop by
+   the base rules; below 480px the dial names occupancy in circular form and
+   the rows restate the same occupied / vacant / total the note carries. */
+.pulse-dial,
+.pulse-breakdown {
+  display: none;
+}
+
+@media (max-width: 480px) {
+  .content-wrap[data-view="dashboard"] .pulse-dial {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 4px 0 10px;
+  }
+
+  .pulse-dial-svg {
+    width: 104px;
+    height: 104px;
+    flex-shrink: 0;
+    transform: rotate(-90deg);
+  }
+
+  .pulse-dial-track {
+    fill: none;
+    stroke: var(--hairline-strong);
+    stroke-width: 10;
+  }
+
+  .pulse-dial-arc {
+    fill: none;
+    stroke-width: 10;
+    stroke-linecap: round;
+  }
+
+  .pulse-dial-arc--blue { stroke: var(--action-blue); }
+  .pulse-dial-arc--green { stroke: var(--success); }
+
+  .pulse-dial-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    transform: none;
+  }
+
+  .pulse-dial-text strong {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pulse-dial-text span {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted-text);
+  }
+
+  .content-wrap[data-view="dashboard"] .pulse-breakdown {
+    display: flex;
+    flex-direction: column;
+    margin: 10px 0 0;
+  }
+
+  .pulse-breakdown-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 6px 0;
+    border-top: 1px dashed var(--hairline-strong);
+  }
+
+  .pulse-breakdown-row dt {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted-text);
+  }
+
+  .pulse-breakdown-row dd {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* On phones the collection row collapses to one column above, so the
+     collection pulse bar would double the money story — the occupancy row
+     (dial + breakdown) is the phone pulse. */
+  .content-wrap[data-view="dashboard"] .pulse-grid .pulse-row:first-child {
+    display: none;
+  }
+}
+
+/* --- Mobile bottom bar: Home | Rooms | Payments | More --- */
+/* Hidden on desktop by the base rules above. At phone widths the seven-item
+   desktop strip is replaced rather than squeezed: three primaries on a fixed
+   bar, the rest behind the MORE disclosure. Room for the bar is reserved on
+   the page shell so last content is never covered. */
+@media (max-width: 768px) {
+  .page-shell {
+    padding-bottom: 84px;
+  }
+
+  .top-nav {
+    display: none;
+  }
+
+  .mobile-tabbar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 60;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 2px;
+    padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid rgba(201, 168, 106, 0.42);
+    background: var(--deep-navy, #0f172a);
+  }
+
+  .mobile-tab {
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 4px;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgba(245, 240, 232, 0.72);
+    border: 1.5px solid transparent;
+    border-radius: 0;
+    background: transparent;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Active tab is named by shape as well as colour: champagne-gold text plus
+     a gold underline, on the navy surface. */
+  .mobile-tab.is-active {
+    background: transparent;
+    color: var(--champagne-gold, #c9a86a);
+    border-color: transparent;
+    box-shadow: none;
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 4px;
+  }
+
+  .mobile-tab:active {
+    transform: translate(1px, 1px);
+  }
+
+  /* MORE menu: a sheet above the bar. Sits above the tabbar (60) and below
+     toasts (90); the drawer/backdrop (120/121) always capture input above it. */
+  .more-menu {
+    position: fixed;
+    left: 8px;
+    right: 8px;
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    z-index: 75;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px;
+    border: var(--line);
+    background: var(--white);
+    box-shadow: 4px 4px 0 var(--ink);
+    max-height: min(60dvh, 420px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .more-menu button {
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: left;
+    color: var(--ink);
+    background: transparent;
+    border: 1.5px solid transparent;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .more-menu button.is-active {
+    background: var(--yellow);
+    border-color: var(--ink);
+  }
+
+  .more-menu hr {
+    margin: 4px 0;
+    border: 0;
+    border-top: 1px solid var(--hairline);
+  }
+
+  .more-menu .more-logout {
+    color: var(--error-ink);
+  }
+}
+
+/* Entrance + motion parity for the new dashboard elements. */
+.snapshot-grid > *,
+.collection-grid > *,
+.pulse-grid > *,
+.dir-grid > * {
+  animation: rise-in var(--dur-normal) var(--ease) backwards;
+}
+
+.snapshot-grid > *:nth-child(2),
+.collection-grid > *:nth-child(2),
+.dir-grid > *:nth-child(2) { animation-delay: 45ms; }
+.snapshot-grid > *:nth-child(3),
+.collection-grid > *:nth-child(3),
+.dir-grid > *:nth-child(3) { animation-delay: 90ms; }
+.snapshot-grid > *:nth-child(4),
+.dir-grid > *:nth-child(4) { animation-delay: 135ms; }
+.dir-grid > *:nth-child(5) { animation-delay: 180ms; }
+.dir-grid > *:nth-child(n + 6) { animation-delay: 225ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .snapshot-grid > *,
+  .collection-grid > *,
+  .pulse-grid > *,
+  .dir-grid > * {
+    animation: none;
+  }
+
+  .snapshot-value.flash,
+  .collection-value.flash,
+  .pulse-value.flash {
+    animation: none;
+  }
+
+  .building-object:hover,
+  .building-object:active {
+    transform: none;
+  }
+}
+
+/* Touch: no hover lift, but the press still answers. */
+@media (hover: none) {
+  .building-object:active {
+    transform: translate(-1px, -1px);
+  }
+}
+
+@media (pointer: coarse) {
+  .mobile-tab,
+  .more-menu button,
+  .building-object {
+    min-height: 44px;
   }
 }

@@ -34,11 +34,11 @@ function ResidentFields({ label, resident, disabled, onChange }) {
       style={{ border: '2px solid var(--ink)', background: 'var(--paper)', padding: '6px 16px 16px', margin: '0 0 16px' }}
     >
       <legend style={{ fontWeight: 700, fontSize: 12, letterSpacing: '0.05em', padding: '0 8px' }}>{label}</legend>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12, paddingTop: 10 }}>
-        <FieldGroup label="First name *"><input type="text" {...field('first_name')} /></FieldGroup>
-        <FieldGroup label="Last name *"><input type="text" {...field('last_name')} /></FieldGroup>
-        <FieldGroup label="Phone"><input type="tel" {...field('phone')} /></FieldGroup>
-        <FieldGroup label="Email"><input type="email" {...field('email')} /></FieldGroup>
+      <div className="resident-fields-grid" style={{ paddingTop: 10 }}>
+        <FieldGroup label="First name *"><input type="text" autoComplete="given-name" {...field('first_name')} /></FieldGroup>
+        <FieldGroup label="Last name *"><input type="text" autoComplete="family-name" {...field('last_name')} /></FieldGroup>
+        <FieldGroup label="Phone"><input type="tel" inputMode="tel" autoComplete="tel" {...field('phone')} /></FieldGroup>
+        <FieldGroup label="Email"><input type="email" inputMode="email" autoComplete="email" {...field('email')} /></FieldGroup>
         <FieldGroup label="Gender">
           <select {...field('gender')}>
             <option value="M">Male</option>
@@ -106,6 +106,16 @@ export default function AssignResidentModal({ room, occupancy, onClose, onRefres
 
   const pending = residents.slice(createdCount)
   const occupancyPreference = people === 2 || startsWithForm ? 'double' : 'single'
+
+  // Typed-but-unsent form content. Closing the modal while any of these holds
+  // user input shows an inline discard prompt instead of losing the draft.
+  const hasUnsavedDraft = people > 0 && (
+    residents.some((resident) => Object.values(resident).some((value) => String(value ?? '').trim() !== '' && value !== 'M'))
+    || agreedRent.trim() !== '' || checkIn !== '' || checkOut !== ''
+  )
+  const closeMessage = hasUnsavedDraft && !submitting
+    ? 'You have unsaved resident details. Discard them and close?'
+    : undefined
 
   // Only ever POSTs to the verified endpoint; agreed rent rides on Resident 1's
   // request only, because it is a single room-level value.
@@ -188,6 +198,7 @@ export default function AssignResidentModal({ room, occupancy, onClose, onRefres
     <Modal
       title={`ASSIGN RESIDENT · ROOM ${roomNumber}`}
       onClose={submitting ? undefined : onClose}
+      confirmCloseMessage={closeMessage}
     >
       {/* Fixed room context — the room cannot be changed inside this flow. */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10, padding: '14px 16px', border: '3px solid var(--ink)', background: 'var(--yellow)', boxShadow: '4px 4px 0 var(--ink)', marginBottom: 18 }}>
@@ -242,11 +253,12 @@ export default function AssignResidentModal({ room, occupancy, onClose, onRefres
             <legend style={{ fontWeight: 700, fontSize: 12, letterSpacing: '0.05em', padding: '0 8px' }}>
               ROOM TENANCY — applies to the whole room
             </legend>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 12, paddingTop: 10 }}>
+            <div className="tenancy-fields-grid" style={{ paddingTop: 10 }}>
               <FieldGroup label="Agreed rent (room-level)">
                 <input
                   type="number"
                   min="0"
+                  inputMode="decimal"
                   className="field-input"
                   value={agreedRent}
                   placeholder="Optional"

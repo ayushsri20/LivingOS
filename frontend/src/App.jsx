@@ -1,12 +1,14 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, lazy, Suspense } from 'react'
 import './components.css'
 import './App.css'
+import './panesar-auth.css'
 import { apiFetch } from './api/client'
 import { formatDate, getRoomNumber, money, normalizeRoomStatus, statusColors } from './utils'
 import { TopBar, LoadingShell, Toast, MetricCard, EmptyState, Modal, FieldGroup } from './components/shared'
 import { AuthProvider, useAuth } from './context/AuthContext'
-import RoomDrawer from './components/RoomDrawer'
-import AssignResidentModal from './components/AssignResident'
+
+const RoomDrawer = lazy(() => import('./components/RoomDrawer'))
+const AssignResidentModal = lazy(() => import('./components/AssignResident'))
 
 /**
  * Single source of truth for each authenticated page's banner copy.
@@ -16,6 +18,9 @@ import AssignResidentModal from './components/AssignResident'
  */
 const VIEW_META = {
   dashboard: {
+    // Uppercase eyebrow matches every other page; a phone-only CSS rule renders
+    // the dashboard banner editorially without touching this shared copy.
+    eyebrow: 'Property Operations Overview',
     title: 'DASHBOARD',
   },
   rooms: {
@@ -123,9 +128,9 @@ function summarizeRooms(list) {
 /** Compact label/value row used on room and electricity cards. Presentational only. */
 function StatRow({ label, value, tone }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 13 }}>
-      <span style={{ color: '#5c564c', fontWeight: 700 }}>{label}</span>
-      <strong style={{ fontFamily: 'var(--font-display)', fontSize: 15, color: tone }}>{value}</strong>
+    <div className="stat-row">
+      <span className="stat-row-label">{label}</span>
+      <strong className="stat-row-value" style={{ color: tone }}>{value}</strong>
     </div>
   )
 }
@@ -302,14 +307,16 @@ function RoomsView({ rooms, buildings, selectedBuilding: selectedBuildingProp = 
       )}
 
       {assignRoom && (
-        <AssignResidentModal
-          room={assignRoom}
-          occupancy={occupancyMap[assignRoom.id]}
-          onClose={() => setAssignRoom(null)}
-          onRefresh={onRefresh}
-          onToast={onToast}
-          onResidentsChanged={onResidentsChanged}
-        />
+        <Suspense fallback={null}>
+          <AssignResidentModal
+            room={assignRoom}
+            occupancy={occupancyMap[assignRoom.id]}
+            onClose={() => setAssignRoom(null)}
+            onRefresh={onRefresh}
+            onToast={onToast}
+            onResidentsChanged={onResidentsChanged}
+          />
+        </Suspense>
       )}
     </div>
   )
@@ -320,13 +327,244 @@ function RoomsView({ rooms, buildings, selectedBuilding: selectedBuildingProp = 
  * it is attached to but not the building, so the room inventory snapshot (already
  * loaded by MainShell) supplies building and billing context per resident.
  */
-function ResidentsView({ rooms, buildings, onOpenRoom, syncToken = 0 }) {
+function TenantProfile({ guest, room, onBack }) {
+  const [profileData, setProfileData] = useState(null)
+  const roomId = room?.id ?? guest.room?.id
+  const [loading, setLoading] = useState(Boolean(roomId))
+  const [error, setError] = useState('')
+  const [reloadKey, setReloadKey] = useState(0)
+
+  useEffect(() => {
+    let cancelled = false
+
+    if (!roomId) {
+      return () => { cancelled = true }
+    }
+
+    Promise.all([
+      apiFetch(`/api/room/${roomId}/tenants/`),
+      apiFetch(`/api/rooms/${roomId}/`),
+      apiFetch(`/api/room/${roomId}/payment-history/`),
+      apiFetch(`/api/room/${roomId}/electricity-history/`),
+    ])
+      .then(([tenantResponse, roomResponse, paymentResponse, electricityResponse]) => {
+        if (cancelled) return
+        const resident = (tenantResponse.tenants || []).find((tenant) => tenant.id === guest.id)
+        if (!resident) {
+          throw new Error('This resident is no longer listed in the assigned room. Return to Residents and refresh the list.')
+        }
+        setProfileData({
+          resident,
+          room: roomResponse.room,
+          activeResidents: (tenantResponse.tenants || []).length,
+          payments: paymentResponse.history || [],
+          electricity: electricityResponse.history || [],
+        })
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err.message || 'Unable to load this resident profile.')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => { cancelled = true }
+  }, [guest.id, roomId, reloadKey])
+
+  const retry = () => {
+    setLoading(true)
+    setError('')
+    setReloadKey((key) => key + 1)
+  }
+
+  if (loading) return <LoadingShell label="Loading resident profile…" />
+
+  if (error) {
+    return (
+      <div className="surface">
+        <div className="tenant-profile-toolbar">
+          <button type="button" className="ghost-button" onClick={onBack}>← Back to Residents</button>
+        </div>
+        <div className="section-head" style={{ marginTop: 0 }}><h2>Profile unavailable</h2></div>
+        <div className="error-state">
+          <span>{error}</span>
+          <button type="button" className="retry-button" onClick={retry}>Retry</button>
+        </div>
+      </div>
+    )
+  }
+
+  const resident = profileData?.resident || guest
+  const roomDetails = profileData?.room
+  const gender = resident.gender || guest.gender || ''
+  const genderLabel = { M: 'Male', F: 'Female', O: 'Other' }[gender] || gender || '—'
+  const documents = [
+    ['Government ID photo', resident.govt_id_photo, true],
+    ['Aadhaar front', resident.aadhar_front, Boolean(profileData?.resident)],
+    ['Aadhaar back', resident.aadhar_back, Boolean(profileData?.resident)],
+    ['College ID photo', resident.college_id_photo, true],
+    ['Document verification image', resident.document_verification_image, Boolean(profileData?.resident)],
+  ]
+
+  return (
+    <div className="tenant-profile">
+      <div className="tenant-profile-toolbar">
+        <button type="button" className="ghost-button" onClick={onBack}>← Back to Residents</button>
+        <span className="eyebrow">TENANT PROFILE</span>
+      </div>
+
+      <section className="surface tenant-profile-section">
+        <div className="section-head" style={{ marginTop: 0 }}><h2>Profile Overview</h2></div>
+        <div className="resident-profile-heading">
+          <div>
+            <h3>{guest.full_name || '—'}</h3>
+          </div>
+          <span className={`status-tag ${guest.is_active ? 'paid' : 'pending'}`}>
+            {guest.is_active ? 'ACTIVE' : 'INACTIVE'}
+          </span>
+        </div>
+        <div className="tenant-profile-grid">
+          <div><span className="eyebrow">Resident ID</span><strong>{guest.id}</strong></div>
+          <div><span className="eyebrow">Building</span><strong>{roomDetails?.building || room?.building || '—'}</strong></div>
+          <div><span className="eyebrow">Room</span><strong>{roomDetails?.room || getRoomNumber(room || guest.room)}</strong></div>
+          <div><span className="eyebrow">Check-in</span><strong>{formatDate(guest.check_in_date)}</strong></div>
+        </div>
+      </section>
+
+      <section className="surface tenant-profile-section">
+        <div className="section-head" style={{ marginTop: 0 }}><h2>Personal &amp; Contact Details</h2></div>
+        <div className="tenant-profile-grid">
+          <div><span className="eyebrow">Full name</span><strong>{guest.full_name || '—'}</strong></div>
+          <div><span className="eyebrow">Date of birth</span><strong>{formatDate(guest.date_of_birth)}</strong></div>
+          <div><span className="eyebrow">Gender</span><strong>{genderLabel}</strong></div>
+          <div><span className="eyebrow">Phone</span><strong>{guest.phone || '—'}</strong></div>
+          <div><span className="eyebrow">Email</span><strong>{guest.email || '—'}</strong></div>
+          <div><span className="eyebrow">Address</span><strong>{resident.address || guest.address || '—'}</strong></div>
+          <div><span className="eyebrow">City</span><strong>{resident.city || guest.city || '—'}</strong></div>
+          <div><span className="eyebrow">State</span><strong>{resident.state || guest.state || '—'}</strong></div>
+          <div><span className="eyebrow">Country</span><strong>{resident.country || guest.country || '—'}</strong></div>
+          <div><span className="eyebrow">Postal code</span><strong>{resident.zip_code || guest.zip_code || '—'}</strong></div>
+        </div>
+      </section>
+
+      <section className="surface tenant-profile-section">
+        <div className="section-head" style={{ marginTop: 0 }}><h2>Identity Documents</h2></div>
+        <div className="tenant-profile-grid">
+          <div><span className="eyebrow">ID type</span><strong>{guest.id_type || '—'}</strong></div>
+          <div><span className="eyebrow">ID number</span><strong>{guest.id_number || '—'}</strong></div>
+          <div><span className="eyebrow">College / student ID</span><strong>{resident.college_id || guest.college_id || '—'}</strong></div>
+          <div><span className="eyebrow">College</span><strong>{guest.student_college || '—'}</strong></div>
+          {documents.map(([label, path, known]) => (
+            <div key={label}>
+              <span className="eyebrow">{label}</span>
+              <strong>{!known ? 'Not available from this API' : path ? 'On file' : 'Not on file'}</strong>
+            </div>
+          ))}
+        </div>
+        <p className="tenant-profile-note">Document images are not displayed in this profile.</p>
+      </section>
+
+      <section className="surface tenant-profile-section">
+        <div className="section-head" style={{ marginTop: 0 }}><h2>Room &amp; Occupancy</h2></div>
+        {roomDetails ? (
+          <div className="tenant-profile-grid">
+            <div><span className="eyebrow">Building</span><strong>{roomDetails.building || '—'}</strong></div>
+            <div><span className="eyebrow">Room</span><strong>{roomDetails.room || '—'}</strong></div>
+            <div><span className="eyebrow">Active residents in room</span><strong>{profileData.activeResidents}</strong></div>
+            <div><span className="eyebrow">Check-out</span><strong>{guest.check_out_date ? formatDate(guest.check_out_date) : '—'}</strong></div>
+          </div>
+        ) : <p className="tenant-profile-note">No room is currently assigned to this resident.</p>}
+      </section>
+
+      <section className="surface tenant-profile-section">
+        <div className="section-head" style={{ marginTop: 0 }}>
+          <h2>Rent &amp; Financial Summary</h2>
+          <span>Room-level billing</span>
+        </div>
+        {roomDetails ? (
+          <>
+            <div className="tenant-profile-grid">
+              <div><span className="eyebrow">Current monthly rent</span><strong>{money(roomDetails.agreed_rent)}</strong></div>
+              <div><span className="eyebrow">Current total bill</span><strong>{money(roomDetails.total_bill)}</strong></div>
+              <div><span className="eyebrow">Collected</span><strong>{money(roomDetails.collected_amount)}</strong></div>
+              <div><span className="eyebrow">Outstanding</span><strong>{money(roomDetails.outstanding_amount)}</strong></div>
+              <div><span className="eyebrow">Current status</span><strong>{roomDetails.payment_status || '—'}</strong></div>
+            </div>
+            <p className="tenant-profile-note">Rent and collections are recorded for the room and are not attributed to an individual tenant.</p>
+          </>
+        ) : <p className="tenant-profile-note">Room-level billing is unavailable until a room is assigned.</p>}
+      </section>
+
+      <section className="surface tenant-profile-section">
+        <div className="section-head" style={{ marginTop: 0 }}><h2>Payment History</h2><span>Room-level records</span></div>
+        {!roomDetails ? <p className="tenant-profile-note">No room payment history is available.</p> : profileData.payments.length === 0 ? (
+          <p className="tenant-profile-note">No rent payment records are available for this room.</p>
+        ) : (
+          <div className="tenant-profile-records">
+            {profileData.payments.map((payment) => (
+              <article className="tenant-profile-record" key={payment.id}>
+                <div className="tenant-profile-record-heading"><strong>{payment.month}</strong><span>{payment.status}</span></div>
+                <div className="tenant-profile-grid">
+                  <div><span className="eyebrow">Rent</span><strong>{money(payment.rent_amount)}</strong></div>
+                  <div><span className="eyebrow">Paid</span><strong>{money(payment.paid_amount)}</strong></div>
+                  <div><span className="eyebrow">Remaining</span><strong>{money(payment.remaining)}</strong></div>
+                </div>
+                {(payment.records || []).map((record, index) => (
+                  <div className="tenant-profile-record-detail" key={`${payment.id}-${record.date}-${index}`}>
+                    {formatDate(record.date)} · {money(record.amount)} · {record.method || '—'}
+                    {record.ref ? ` · Ref ${record.ref}` : ''}
+                  </div>
+                ))}
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="surface tenant-profile-section">
+        <div className="section-head" style={{ marginTop: 0 }}><h2>Electricity &amp; Bills</h2><span>Room-level bills</span></div>
+        {!roomDetails ? <p className="tenant-profile-note">No room electricity history is available.</p> : profileData.electricity.length === 0 ? (
+          <p className="tenant-profile-note">No electricity bills are recorded for this room.</p>
+        ) : (
+          <div className="tenant-profile-records">
+            {profileData.electricity.map((bill) => (
+              <article className="tenant-profile-record" key={bill.id}>
+                <div className="tenant-profile-record-heading"><strong>{bill.month}</strong><span>{bill.status}</span></div>
+                <div className="tenant-profile-grid">
+                  <div><span className="eyebrow">Units</span><strong>{bill.units}</strong></div>
+                  <div><span className="eyebrow">Rate</span><strong>₹{bill.rate} per unit</strong></div>
+                  <div><span className="eyebrow">Bill amount</span><strong>{money(bill.bill_amount)}</strong></div>
+                  <div><span className="eyebrow">Paid</span><strong>{money(bill.paid_amount)}</strong></div>
+                  <div><span className="eyebrow">Remaining</span><strong>{money(bill.remaining)}</strong></div>
+                  <div><span className="eyebrow">Due date</span><strong>{formatDate(bill.due_date)}</strong></div>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+        {roomDetails && <p className="tenant-profile-note">Electricity bills are recorded for the room and are not attributed to an individual tenant.</p>}
+      </section>
+
+      <section className="surface tenant-profile-section">
+        <div className="section-head" style={{ marginTop: 0 }}><h2>Additional Records</h2></div>
+        <div className="tenant-profile-grid">
+          <div><span className="eyebrow">Status</span><strong>{guest.is_active ? 'Active' : 'Inactive'}</strong></div>
+          <div><span className="eyebrow">Registered</span><strong>{formatDate(guest.created_at)}</strong></div>
+          <div className="tenant-profile-wide"><span className="eyebrow">Notes</span><strong>{guest.notes || '—'}</strong></div>
+        </div>
+      </section>
+    </div>
+  )
+}
+
+function ResidentsView({ rooms, buildings, syncToken = 0 }) {
   const [guests, setGuests] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
   const [selectedBuilding, setSelectedBuilding] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
+  const [selectedResidentId, setSelectedResidentId] = useState(null)
 
   useEffect(() => {
     let cancelled = false
@@ -387,6 +625,29 @@ function ResidentsView({ rooms, buildings, onOpenRoom, syncToken = 0 }) {
     ].filter(Boolean).join(' ').toLowerCase()
     return haystack.includes(query)
   })
+
+  if (selectedResidentId !== null) {
+    const guest = guests.find((resident) => resident.id === selectedResidentId)
+    if (!guest) {
+      return (
+        <div className="surface">
+          <div className="tenant-profile-toolbar">
+            <button type="button" className="ghost-button" onClick={() => setSelectedResidentId(null)}>← Back to Residents</button>
+          </div>
+          <EmptyState message="This resident is no longer in the current list." />
+        </div>
+      )
+    }
+    const room = guest.room ? roomById.get(guest.room.id) || guest.room : null
+    return (
+      <TenantProfile
+        key={`${guest.id}:${room?.id || 'unassigned'}`}
+        guest={guest}
+        room={room}
+        onBack={() => setSelectedResidentId(null)}
+      />
+    )
+  }
 
   return (
     <div>
@@ -473,32 +734,195 @@ function ResidentsView({ rooms, buildings, onOpenRoom, syncToken = 0 }) {
                   <StatRow label="Agreed rent" value={rent} />
                 </div>
 
-                <span style={{ display: 'inline-flex', width: '100%', justifyContent: 'center', marginTop: 14, padding: '8px 14px', border: '2px solid var(--ink)', background: 'var(--paper)', fontWeight: 700, fontSize: 12, letterSpacing: '0.04em' }}>
-                  {snapshot ? 'OPEN ROOM →' : 'NO ROOM ASSIGNED'}
-                </span>
               </>
             )
 
-            return snapshot ? (
-              <button
-                key={guest.id}
-                type="button"
-                className="room-card"
-                onClick={() => onOpenRoom(snapshot)}
-                style={{ textAlign: 'left', width: '100%' }}
-                aria-label={`Open room ${getRoomNumber(snapshot)} for ${guest.full_name || 'resident'}`}
-              >
+            return (
+              <article key={guest.id} className="room-card resident-card" style={{ cursor: 'default' }}>
                 {card}
-              </button>
-            ) : (
-              <article key={guest.id} className="room-card" style={{ cursor: 'default' }}>
-                {card}
+                <button
+                  type="button"
+                  className="resident-profile-action"
+                  onClick={() => setSelectedResidentId(guest.id)}
+                  aria-label={`View profile for ${guest.full_name || 'resident'}`}
+                >
+                  View Profile
+                </button>
               </article>
             )
           })}
         </div>
       )}
     </div>
+  )
+}
+
+/* ------------------------------------------------------------------------ *
+ * Dashboard blocks.
+ *
+ * Everything rendered below is derived from the two authoritative payloads
+ * this view already fetches — /api/dashboard/metrics/ (money + occupancy) and
+ * /api/rooms/ (inventory, per-building rooms). No figure is hardcoded and no
+ * calculation is invented here: the most these helpers do is sum the same
+ * per-room snapshot the metrics endpoint is built from.
+ * ------------------------------------------------------------------------ */
+
+/**
+ * One inventory figure. No card chrome, no coloured panel: a rule, a large
+ * number and a tracked label, so property state never reads like money.
+ */
+function SnapshotFigure({ label, value, note, flash }) {
+  return (
+    <div className="snapshot-figure">
+      <strong className={`snapshot-value${flash ? ' flash' : ''}`}>{value ?? '—'}</strong>
+      <span className="snapshot-label">{label}</span>
+      {note && <span className="snapshot-note">{note}</span>}
+    </div>
+  )
+}
+
+/**
+ * One money figure. The label leads and the rupee value follows, and the tone
+ * is only ever applied to the value so a due total is never a red panel.
+ */
+function CollectionFigure({ label, value, tone, flash }) {
+  const toneClass = tone ? ` is-${tone}` : ''
+  return (
+    <div className="collection-figure">
+      <span className="collection-label">{label}</span>
+      <strong className={`collection-value${toneClass}${flash ? ' flash' : ''}`}>{value}</strong>
+    </div>
+  )
+}
+
+/**
+ * Compact pulse row: label, percentage and one thin rule. The bar is marked
+ * decorative because the percentage beside it is the real, readable value.
+ *
+ * `dial` / `breakdown` are phone-only renderings of the same backend-derived
+ * values: the dial names occupancy in the brief's circular form and the
+ * breakdown rows state occupied / vacant / total from the same numbers the
+ * note already carries. Desktop keeps rendering label + bar + note only.
+ */
+function PulseRow({ label, value, tone, note, flash, dial, breakdown }) {
+  const safe = Number.isFinite(value) ? value : 0
+  const width = `${Math.min(100, Math.max(0, safe))}%`
+  return (
+    <div className="pulse-row">
+      <div className="pulse-head">
+        <span className="pulse-label">{label}</span>
+        <strong className={`pulse-value${flash ? ' flash' : ''}`}>{safe.toFixed(1)}%</strong>
+      </div>
+      {dial && (
+        <div className="pulse-dial" aria-hidden="true">
+          <svg viewBox="0 0 100 100" className="pulse-dial-svg" focusable="false">
+            <circle className="pulse-dial-track" cx="50" cy="50" r="42" />
+            <circle
+              className={`pulse-dial-arc pulse-dial-arc--${tone}`}
+              cx="50"
+              cy="50"
+              r="42"
+              strokeDasharray={`${(safe / 100) * 264} 264`}
+            />
+          </svg>
+          <span className="pulse-dial-text">
+            <strong>{safe.toFixed(1)}%</strong>
+            <span>Occupied</span>
+          </span>
+        </div>
+      )}
+      <div className="progress-track progress-track--compact" aria-hidden="true">
+        <div className={`progress-fill ${tone}`} style={{ '--bar-width': width }} />
+      </div>
+      <span className="pulse-note">{note}</span>
+      {breakdown && (
+        <dl className="pulse-breakdown">
+          {breakdown.map(({ term, detail }) => (
+            <div className="pulse-breakdown-row" key={term}>
+              <dt>{term}</dt>
+              <dd>{detail}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+    </div>
+  )
+}
+
+/**
+ * One building as a small architectural object rather than an admin card:
+ * identity photo, its six-room facade, one occupancy line, what the building
+ * still owes, and the route into Rooms. The facade draws one cell per real
+ * room from the building's own snapshot, so occupied/vacant colour is never
+ * hardcoded, and every total comes from the same authoritative per-room data
+ * the metrics endpoint reports. The whole card is the control — it reuses the
+ * existing dashboard → Rooms building navigation.
+ *
+ * The photo is a phone-only brand treatment reusing the approved header
+ * artwork (`/branding/plh-final.webp`); it carries no data and is hidden from
+ * assistive tech. Desktop renders the name-led card exactly as before.
+ */
+function BuildingObject({ building, rooms, onOpen }) {
+  const list = building.rooms?.length
+    ? building.rooms
+    : rooms.filter((room) => room.building === building.name)
+  const summary = summarizeRooms(list)
+  const total = list.length
+  const vacant = total - summary.occupied
+  const owes = summary.due > 0
+
+  return (
+    <button
+      type="button"
+      className="building-object"
+      onClick={() => onOpen?.(building.name)}
+      aria-label={`Open rooms in building ${building.name}: ${total} rooms, ${summary.occupied} occupied, ${vacant} vacant, ${owes ? `${money(summary.due)} due` : 'nothing due'}`}
+    >
+      <span className="building-object-photo" aria-hidden="true">
+        {building.name === 'M1' ? (
+          <img src="/branding/building_M1.jpeg" alt="" loading="lazy" />
+        ) : building.name === '1' ? (
+          <img src="/branding/building_1.jpeg" alt="" loading="lazy" />
+        ) : building.name === '2' ? (
+          <img src="/branding/building_2.jpeg" alt="" loading="lazy" />
+        ) : building.name === '3' ? (
+          <img src="/branding/building_3.jpeg" alt="" loading="lazy" />
+        ) : building.name === '4' ? (
+          <img src="/branding/building_4.jpeg" alt="" loading="lazy" />
+        ) : (
+          <img src="/branding/building_5.jpeg" alt="" loading="lazy" />
+        )}
+        <span className="building-object-photo-name">{building.name}</span>
+      </span>
+      <span className="building-object-head">
+        <span className="building-object-name">{building.name}</span>
+        <span className="building-object-occupancy">
+          {total} rooms · {summary.occupied} occupied · {vacant} vacant
+        </span>
+      </span>
+
+      {/* Six-room facade: 3 across × 2 down, one cell per real room. */}
+      <span className="building-facade" aria-hidden="true">
+        {list.map((room) => {
+          const occupied = isRoomOccupied(room)
+          return (
+            <span
+              key={room.id}
+              className={`facade-room${occupied ? ' is-occupied' : ''}`}
+              title={`${getRoomNumber(room)} · ${occupied ? 'Occupied' : 'Vacant'}`}
+            />
+          )
+        })}
+      </span>
+
+      <span className="building-object-foot">
+        <span className={`building-object-status${owes ? ' is-due' : ' is-clear'}`}>
+          {owes ? `${money(summary.due)} due` : 'Clear'}
+        </span>
+        <span className="building-object-action">View rooms →</span>
+      </span>
+      <span className="building-object-caption">Property block</span>
+    </button>
   )
 }
 
@@ -598,144 +1022,138 @@ function DashboardView({ syncToken = 0, onOpenBuilding }) {
   const vacantRooms = totalRooms !== null && occupiedRooms !== null ? totalRooms - occupiedRooms : null
   const occupancyRate = Number(metrics?.occupancy_rate ?? 0)
   const collectionEfficiency = Number(metrics?.collection_efficiency ?? 0)
-  const barWidth = (value) => `${Math.min(100, Math.max(0, value))}%`
+  const amountDue = Number(metrics?.accounts_receivable ?? 0)
 
-  // Portfolio totals come straight from the metrics endpoint (authoritative);
-  // fully-paid rooms is derived from the authoritative per-room snapshot.
-  const fullyPaidRooms = summarizeRooms(rooms).fullyPaid
-
+  // The four blocks below run in a fixed order — inventory, money, pulse,
+  // directory — so the page reads top-down as a property-operations console
+  // instead of as an even wall of equal cards. Spacing, rules and typography
+  // carry that hierarchy; no block needs a coloured panel to stand out.
   return (
     <div className="dashboard-layout">
-      <section>
-        <div className="section-head" style={{ marginTop: 0 }}>
-          <h2>Property Overview</h2>
-          <span>Updated {formatUpdated(meta?.last_updated)}</span>
-        </div>
-        {/* Inventory only. The money figures live once, in Live Financial
-            Summary below, so the same rupee is never shown under two names. */}
-        <div className="metrics-grid">
-          <MetricCard label="Buildings" value={roomsError ? '—' : buildings.length} />
-          <MetricCard label="Total rooms" value={totalRooms ?? '—'} />
-          <MetricCard label="Occupied" value={occupiedRooms ?? '—'} color="green" flash={flashOccupied} />
-          <MetricCard label="Vacant" value={vacantRooms ?? '—'} color="yellow" flash={flashVacant} />
-          <MetricCard label="Occupancy" value={`${occupancyRate.toFixed(1)}%`} flash={flashOccupancyRate} />
-        </div>
-
-        <div className="section-head">
-          <h2>Live Financial Summary</h2>
-          <span>Entire portfolio</span>
-        </div>
-        <div className="metrics-grid">
-          <MetricCard label="Expected collection" value={money(metrics?.expected_yield ?? 0)} color="yellow" flash={flashExpected} />
-          <MetricCard label="Total collected" value={money(metrics?.realized_revenue ?? 0)} color="green" flash={flashCollected} />
-          <MetricCard label="Due" value={money(metrics?.accounts_receivable ?? 0)} color="red" flash={flashDue} />
-          <MetricCard label="Fully paid rooms" value={roomsError ? '—' : fullyPaidRooms} />
+      {/* 1 — PROPERTY SNAPSHOT. Inventory only. The rupees are stated once, in
+          the next block, so no figure appears under two different names. */}
+      <section
+        className="dash-block metric-group metric-group--property"
+        aria-labelledby="dash-snapshot"
+      >
+        <header className="dash-head">
+          <h2 className="dash-title" id="dash-snapshot">Property Snapshot</h2>
+          <span className="dash-meta">Updated {formatUpdated(meta?.last_updated)}</span>
+        </header>
+        <div className="snapshot-grid">
+          <SnapshotFigure label="Buildings" value={roomsError ? '—' : buildings.length} />
+          <SnapshotFigure label="Rooms" value={totalRooms ?? '—'} />
+          <SnapshotFigure
+            label="Occupied"
+            value={occupiedRooms ?? '—'}
+            note={`${occupancyRate.toFixed(1)}% occupancy`}
+            flash={flashOccupied}
+          />
+          <SnapshotFigure label="Vacant" value={vacantRooms ?? '—'} flash={flashVacant} />
         </div>
       </section>
 
-      <div className="dashboard-grid">
-        <div className="surface">
-          <div className="section-head" style={{ marginTop: 0 }}>
-            <h2>Collection Efficiency</h2>
-            <span>Current month</span>
+      {/* 2 — MONTHLY COLLECTION. Money only, straight from the metrics
+          endpoint. Tones mark state on the value, never on the panel. The
+          share bar below is the phone-only compact progress form of these
+          same three backend-derived figures. */}
+      <section
+        className="dash-block metric-group metric-group--finance"
+        aria-labelledby="dash-collection"
+      >
+        <header className="dash-head">
+          <h2 className="dash-title" id="dash-collection">Monthly Collection</h2>
+          <span className="dash-meta">Entire portfolio</span>
+        </header>
+        <div className="collection-grid">
+          <CollectionFigure
+            label="Expected"
+            value={money(metrics?.expected_yield ?? 0)}
+            flash={flashExpected}
+          />
+          <CollectionFigure
+            label="Collected"
+            value={money(metrics?.realized_revenue ?? 0)}
+            tone="positive"
+            flash={flashCollected}
+          />
+          <CollectionFigure
+            label="Due"
+            value={money(amountDue)}
+            tone={amountDue > 0 ? 'attention' : undefined}
+            flash={flashDue}
+          />
+        </div>
+        <div
+          className="collection-share"
+          aria-hidden="true"
+        >
+          <span
+            className="collection-share-fill"
+            style={{ '--bar-width': `${Math.min(100, Math.max(0, collectionEfficiency))}%` }}
+          />
+        </div>
+      </section>
+
+      {/* 3 — PORTFOLIO PULSE. Two compact bars: a five-second operational
+          read, not a second wall of metrics. */}
+      <section className="dash-block" aria-labelledby="dash-pulse">
+        <header className="dash-head">
+          <h2 className="dash-title" id="dash-pulse">Portfolio Pulse</h2>
+          <span className="dash-meta">Current month</span>
+        </header>
+        <div className="pulse-grid">
+          <PulseRow
+            label="Collection"
+            value={collectionEfficiency}
+            tone="green"
+            note="Collected against expected"
+          />
+          <PulseRow
+            label="Occupancy"
+            value={occupancyRate}
+            tone="blue"
+            note={`${occupiedRooms ?? '—'} of ${totalRooms ?? '—'} rooms occupied`}
+            flash={flashOccupancyRate}
+            dial
+            breakdown={[
+              { term: 'Occupied', detail: occupiedRooms ?? '—' },
+              { term: 'Vacant', detail: vacantRooms ?? '—' },
+              { term: 'Total', detail: totalRooms ?? '—' },
+            ]}
+          />
+        </div>
+      </section>
+
+      {/* 4 — BUILDING DIRECTORY. The portfolio map: six architectural
+          objects, each drawn from its own room snapshots. */}
+      <section className="dash-block dash-block--directory" aria-labelledby="dash-directory">
+        <header className="dash-head">
+          <h2 className="dash-title" id="dash-directory">Building Directory</h2>
+          <span className="dash-meta">{roomsError ? 'Unavailable' : `${buildings.length} buildings`}</span>
+        </header>
+        {roomsError ? (
+          <div className="error-state">
+            <span>{roomsError}</span>
+            <button type="button" className="retry-button" onClick={retry}>
+              Retry
+            </button>
           </div>
-          <div style={{ marginTop: 14, marginBottom: 12 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontWeight: 700, fontSize: 14, fontFamily: 'var(--font-display)' }}>
-              <span>TARGET REALIZATION</span>
-              <span>{collectionEfficiency.toFixed(1)}%</span>
-            </div>
-            <div className="progress-track">
-              <div
-                className="progress-fill green"
-                style={{ '--bar-width': barWidth(collectionEfficiency) }}
+        ) : buildings.length === 0 ? (
+          <EmptyState message="No building data is available." />
+        ) : (
+          <div className="dir-grid">
+            {buildings.map((building) => (
+              <BuildingObject
+                key={building.name}
+                building={building}
+                rooms={rooms}
+                onOpen={onOpenBuilding}
               />
-            </div>
+            ))}
           </div>
-          {/* Expected yield and realized revenue are stated in Live Financial
-              Summary above; repeating them here added nothing. */}
-          <p style={{ margin: '14px 0 0', fontSize: 13, color: '#5c564c' }}>
-            Collected against expected for the month.
-          </p>
-        </div>
-
-        <div className="surface">
-          <div className="section-head" style={{ marginTop: 0 }}>
-            <h2>Occupancy</h2>
-            <span>Live</span>
-          </div>
-          <div style={{ marginTop: 14, marginBottom: 12 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontWeight: 700, fontSize: 14, fontFamily: 'var(--font-display)' }}>
-              <span>OCCUPANCY RATE</span>
-              <span>{occupancyRate.toFixed(1)}%</span>
-            </div>
-            <div className="progress-track">
-              <div
-                className="progress-fill blue"
-                style={{ '--bar-width': barWidth(occupancyRate) }}
-              />
-            </div>
-          </div>
-          {/* Room counts are stated in Property Overview above. */}
-          <p style={{ margin: '14px 0 0', fontSize: 13, color: '#5c564c' }}>
-            {occupiedRooms ?? '—'} of {totalRooms ?? '—'} rooms occupied.
-          </p>
-        </div>
-
-        <div className="surface" style={{ gridColumn: '1 / -1' }}>
-          <div className="section-head" style={{ marginTop: 0 }}>
-            <h2>Building Directory</h2>
-            <span>{roomsError ? 'Unavailable' : `${buildings.length} buildings`}</span>
-          </div>
-          {roomsError ? (
-            <div className="error-state">
-              <span>{roomsError}</span>
-              <button type="button" className="retry-button" onClick={retry}>
-                Retry
-              </button>
-            </div>
-          ) : buildings.length === 0 ? (
-            <EmptyState message="No building data is available." />
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 12 }}>
-              {buildings.map((building) => {
-                // Per-building figures are aggregated from the same authoritative
-                // per-room snapshot the metrics endpoint is built from, so no
-                // building-level value is invented here.
-                const summary = summarizeRooms(rooms.filter((room) => room.building === building.name))
-                const totalRoomsInBuilding = building.rooms?.length ?? 0
-                const vacant = totalRoomsInBuilding - summary.occupied
-
-                return (
-                  <button
-                    key={building.name}
-                    type="button"
-                    className="building-card"
-                    style={{ textAlign: 'left' }}
-                    onClick={() => onOpenBuilding?.(building.name)}
-                    aria-label={`Open rooms in building ${building.name}`}
-                  >
-                    <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.05em', marginBottom: 4 }}>BUILDING</div>
-                    <div style={{ fontSize: 24, fontFamily: 'var(--font-display)', fontWeight: 700 }}>{building.name}</div>
-                    <div style={{ fontSize: 11, fontWeight: 700, marginTop: 4 }}>
-                      {totalRoomsInBuilding} rooms · {summary.occupied} occupied · {vacant} vacant
-                    </div>
-                    <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 5, fontSize: 12 }}>
-                      <StatRow label="Fully paid" value={summary.fullyPaid} />
-                      <StatRow label="Expected" value={money(summary.expected)} />
-                      <StatRow label="Collected" value={money(summary.collected)} tone="var(--green)" />
-                      <StatRow label="Due" value={money(summary.due)} tone="var(--red)" />
-                    </div>
-                    <div style={{ marginTop: 10, fontSize: 11, fontWeight: 700, letterSpacing: '0.04em' }}>
-                      VIEW ROOMS →
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
-          )}
-        </div>
-
-        </div>
+        )}
+      </section>
     </div>
   )
 }
@@ -1392,6 +1810,15 @@ function ExpenseForm({ buildings, defaultMonth, onClose, onSaved }) {
     setForm((current) => ({ ...current, [field]: value }))
   }
 
+  // Draft detection drives the shared modal's discard prompt: a backdrop or
+  // Escape close never eats a typed-in (but unsent) expense.
+  const hasUnsavedDraft = !saving && (
+    form.amount.trim() !== '' || form.description.trim() !== '' || !form.is_paid
+  )
+  const closeMessage = hasUnsavedDraft
+    ? 'You have an unsaved expense draft. Discard it and close?'
+    : undefined
+
   const handleSubmit = async (event) => {
     event.preventDefault()
     if (saving) return
@@ -1419,13 +1846,13 @@ function ExpenseForm({ buildings, defaultMonth, onClose, onSaved }) {
   }
 
   return (
-    <Modal title="RECORD EXPENSE" onClose={saving ? undefined : onClose}>
+    <Modal title="RECORD EXPENSE" onClose={saving ? undefined : onClose} confirmCloseMessage={closeMessage}>
       <form onSubmit={handleSubmit} aria-busy={saving} noValidate>
         {error && (
-          <div className="error-state" style={{ marginBottom: 14 }}><span>{error}</span></div>
+          <div className="error-state" role="alert" aria-live="assertive" style={{ marginBottom: 14 }}><span>{error}</span></div>
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <div className="expense-fields-grid">
           <FieldGroup label="Building">
             <select className="field-input" value={form.building} onChange={update('building')} disabled={saving}>
               {buildings.map((name) => <option key={name} value={name}>{name}</option>)}
@@ -1437,7 +1864,7 @@ function ExpenseForm({ buildings, defaultMonth, onClose, onSaved }) {
             </select>
           </FieldGroup>
           <FieldGroup label="Amount (₹)">
-            <input type="number" min="0" step="0.01" className="field-input" value={form.amount} onChange={update('amount')} disabled={saving} />
+            <input type="number" min="0" step="0.01" inputMode="decimal" className="field-input" value={form.amount} onChange={update('amount')} disabled={saving} />
           </FieldGroup>
           <FieldGroup label="Date">
             <input type="date" className="field-input" value={form.date} onChange={update('date')} disabled={saving} />
@@ -1445,10 +1872,10 @@ function ExpenseForm({ buildings, defaultMonth, onClose, onSaved }) {
         </div>
 
         <FieldGroup label="Description">
-          <input type="text" className="field-input" value={form.description} onChange={update('description')} disabled={saving} placeholder="What was this expense for?" />
+          <input type="text" className="field-input" value={form.description} onChange={update('description')} disabled={saving} placeholder="What was this expense for?" autoComplete="off" />
         </FieldGroup>
 
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, marginTop: 4 }}>
+        <label className="expense-paid-row">
           <input type="checkbox" checked={form.is_paid} onChange={update('is_paid')} disabled={saving} />
           Already paid (pending expenses do not reduce net collection)
         </label>
@@ -1759,6 +2186,50 @@ function FinancialReport() {
   )
 }
 
+/**
+ * Public brand landing — the front door of the unauthenticated flow.
+ * Presentational only: its single action hands off to the existing login
+ * screen, which keeps using the project's authentication context unchanged.
+ */
+function LandingShell({ onEnter }) {
+  return (
+    <div className="panesar-landing">
+      <header className="pl-topbar">
+        <div className="pl-brandmark">
+          <img src="/branding/panesar-logo.png" alt="" width="34" height="34" />
+          <span className="pl-wordmark">Panesar <span className="gold">Living</span></span>
+        </div>
+        <span className="pl-topmeta">Property Operations / 2026</span>
+      </header>
+
+      <span className="pl-rail left" aria-hidden="true">Panesar Property System</span>
+      <span className="pl-rail right" aria-hidden="true">Rooms · Residents · Payments</span>
+
+      <main className="pl-hero">
+        <div className="pl-monogram">
+          <img src="/branding/panesar-logo.png" alt="Panesar PG and Motels emblem" />
+        </div>
+
+        <h1 className="pl-title">
+          <span className="pl-word w-panesar">PANESAR</span>{' '}
+          <span className="pl-word w-living">LIVING</span>
+        </h1>
+        <span className="pl-kicker">Property Operations</span>
+        <span className="pl-rule" aria-hidden="true" />
+        <p className="pl-sub">
+          One focused workspace for rooms, residents, rent, electricity and property operations.
+        </p>
+
+        <button type="button" className="pl-enter" onClick={onEnter}>
+          Enter workspace <span className="arrow" aria-hidden="true">→</span>
+        </button>
+      </main>
+
+      <footer className="pl-caption">People · Property · Progress</footer>
+    </div>
+  )
+}
+
 function LoginShell() {
   const { login, authError, checkAuth } = useAuth()
   const [form, setForm] = useState({ username: '', password: '' })
@@ -1807,13 +2278,41 @@ function LoginShell() {
   }
 
   return (
-    <div className="login-shell">
-      <div className="login-panel">
-          <div className="eyebrow">Panesar Living OS</div>
-          <h1>SECURE<br />ACCESS.</h1>
+    <div className="panesar-login">
+      <aside className="panesar-brand">
+        <span className="plb-corner tl" aria-hidden="true" />
+        <span className="plb-corner tr" aria-hidden="true" />
+        <span className="plb-corner bl" aria-hidden="true" />
+        <span className="plb-corner br" aria-hidden="true" />
+        <div className="plb-arc" aria-hidden="true" />
+
+        <div className="plb-content">
+          <div className="plb-logo">
+            <img src="/branding/panesar-logo.png" alt="" />
+          </div>
+          <div className="plb-title">PANESAR <span className="gold">LIVING</span></div>
+          <div className="plb-kicker">Property Operations</div>
+          <span className="plb-rule" aria-hidden="true" />
+          <p className="plb-copy">
+            A focused digital workspace for rooms, residents, rent, electricity
+            and everyday property operations.
+          </p>
+        </div>
+
+        <div className="plb-foot">Panesar Living · Property Operations</div>
+      </aside>
+
+      <main className="panesar-auth-side">
+        <span className="pl-auth-meta" aria-hidden="true">Login / Access</span>
+
+        <section className="panesar-login-card" aria-labelledby="login-heading">
+          <h1 className="pl-heading" id="login-heading">
+            <span>Welcome</span> <span className="blue">back.</span>
+          </h1>
+          <p className="pl-lede">Enter your property operations credentials to continue.</p>
 
           {visibleError && (
-            <div id="login-error">
+            <div id="login-error" className="pl-error">
               <Toast
                 type="error"
                 message={visibleError}
@@ -1825,22 +2324,22 @@ function LoginShell() {
           {isConnectionError && (
             <button
               type="button"
-              className="retry-button"
+              className="retry-button pl-retry"
               onClick={handleRetry}
               disabled={retrying}
-              style={{ width: '100%', marginBottom: 14 }}
             >
               {retrying ? 'Reconnecting…' : 'Retry connection'}
             </button>
           )}
 
-          <form onSubmit={handleSubmit} className="login-form" aria-busy={loading} noValidate>
-            <div className="field-group">
+          <form onSubmit={handleSubmit} className="pl-form" aria-busy={loading} noValidate>
+            <div className="pl-field">
               <label htmlFor="login-username">Username</label>
               <input
                 id="login-username"
                 name="username"
-                className="field-input"
+                className="pl-input"
+                placeholder="Enter your username"
                 value={form.username}
                 onChange={handleChange('username')}
                 autoComplete="username"
@@ -1852,13 +2351,14 @@ function LoginShell() {
               />
             </div>
 
-            <div className="field-group">
+            <div className="pl-field">
               <label htmlFor="login-password">Password</label>
               <input
                 id="login-password"
                 name="password"
                 type="password"
-                className="field-input"
+                className="pl-input"
+                placeholder="Enter your password"
                 value={form.password}
                 onChange={handleChange('password')}
                 autoComplete="current-password"
@@ -1869,11 +2369,14 @@ function LoginShell() {
               />
             </div>
 
-            <button type="submit" className="btn-primary" disabled={loading}>
-              {loading ? 'Authenticating…' : 'Sign In'}
+            <button type="submit" className="pl-submit" disabled={loading}>
+              {loading ? 'Authenticating…' : 'Sign in to Panesar Living →'}
             </button>
-        </form>
-      </div>
+          </form>
+
+          <p className="pl-card-foot">Protected property management workspace</p>
+        </section>
+      </main>
     </div>
   )
 }
@@ -1881,6 +2384,10 @@ function LoginShell() {
 function MainShell() {
   const { authState } = useAuth()
   const [currentView, setCurrentView] = useState('dashboard')
+  // Which unauthenticated screen to show: the brand landing first, then the
+  // login card once the visitor asks to enter. Authentication itself (login
+  // call, error handling, protected views) is unchanged.
+  const [authView, setAuthView] = useState('landing')
   const [rooms, setRooms] = useState([])
   const [buildings, setBuildings] = useState([])
   const [roomsLoading, setRoomsLoading] = useState(true)
@@ -1967,7 +2474,13 @@ function MainShell() {
   const openRoom = (room) => setSelectedRoomId(room.id)
 
   if (authState === 'checking') return <LoadingShell label="Checking session…" />
-  if (authState === 'unauthenticated' || authState === 'error') return <LoginShell />
+  // The auth state alone decides "signed in or not"; only the presentation of
+  // the signed-out state is routed — Landing first, then the Login card.
+  if (authState === 'unauthenticated' || authState === 'error') {
+    return authView === 'login'
+      ? <LoginShell />
+      : <LandingShell onEnter={() => setAuthView('login')} />
+  }
 
   const activeView = VIEW_META[currentView] || VIEW_META.dashboard
   const selectedRoom = selectedRoomId === null ? null : rooms.find((room) => room.id === selectedRoomId) || null
@@ -1976,11 +2489,13 @@ function MainShell() {
     <div className="page-shell">
       <TopBar currentView={currentView} onViewChange={setCurrentView} />
 
-      <main className="content-wrap" key={currentView}>
+      <main className="content-wrap" key={currentView} aria-labelledby="page-title" data-view={currentView}>
         <div className="page-banner">
           <div>
             {activeView.eyebrow && <span className="eyebrow">{activeView.eyebrow}</span>}
-            <h1>{activeView.title}</h1>
+            {/* The banner heading is the page identity; labelling the landmark
+                with it means assistive tech announces "where am I" on entry. */}
+            <h1 id="page-title">{activeView.title}</h1>
           </div>
         </div>
 
@@ -2004,7 +2519,6 @@ function MainShell() {
           <ResidentsView
             rooms={rooms}
             buildings={buildings}
-            onOpenRoom={openRoom}
             syncToken={residentsSync}
           />
         ) : currentView === 'electricity' ? (
@@ -2044,20 +2558,22 @@ function MainShell() {
       </main>
 
       {toast && (
-        <div style={{ position: 'fixed', left: 24, bottom: 24, zIndex: 200, maxWidth: 380 }}>
+        <div className="toast-region">
           <Toast type={toast.type} message={toast.message} onClose={() => setToast(null)} />
         </div>
       )}
 
       {selectedRoom && (
-        <RoomDrawer
-          key={selectedRoom.id}
-          room={selectedRoom}
-          onClose={() => setSelectedRoomId(null)}
-          onRefresh={refreshRooms}
-          onToast={setToast}
-          onPaymentsCollected={handlePaymentsCollected}
-        />
+        <Suspense fallback={null}>
+          <RoomDrawer
+            key={selectedRoom.id}
+            room={selectedRoom}
+            onClose={() => setSelectedRoomId(null)}
+            onRefresh={refreshRooms}
+            onToast={setToast}
+            onPaymentsCollected={handlePaymentsCollected}
+          />
+        </Suspense>
       )}
     </div>
   )

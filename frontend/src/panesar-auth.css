@@ -1,0 +1,836 @@
+/* ============================================================================
+   PANESAR LIVING — Landing + Login
+   ----------------------------------------------------------------------------
+   Page-scoped styles for the two unauthenticated screens only. Every selector
+   here is namespaced under .panesar-landing / .panesar-login (or the pl-*
+   keyframes), so nothing in this file can reach the authenticated application.
+
+   Colour resolves through the tokens declared in index.css:
+     Warm Ivory #F5F0E8 · Pure Surface #FFFDF8 · Panesar Black #171717
+     Deep Navy #0F172A · Champagne Gold #C9A86A · Deep Gold #A98245
+     Modern Blue #2563EB · Muted #777168
+
+   Motion budget: micro 120-180ms · component 200-300ms ·
+   entrance 350-600ms · brand reveal <=1.8s. Base rules are always the visible
+   end-state; animations start "from" hidden with fill-mode both, so disabling
+   animation (reduced motion) leaves everything fully visible.
+   ========================================================================== */
+
+/* ============================================================
+   Shared keyframes (pl-* namespace)
+   ============================================================ */
+
+@keyframes pl-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes pl-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Editorial word reveal — clip-path wipe with a slight lift. */
+@keyframes pl-word {
+  from { opacity: 0; clip-path: inset(0 100% 0 0); transform: translateY(0.14em); }
+  to   { opacity: 1; clip-path: inset(0 0 0 0);   transform: translateY(0); }
+}
+
+/* Monogram enters, settles with a soft overshoot. */
+@keyframes pl-monogram {
+  0%   { opacity: 0; transform: translateY(-16px) scale(0.9); }
+  62%  { opacity: 1; transform: translateY(4px) scale(1.02); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes pl-draw {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+@keyframes pl-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pl-card-in {
+  from { opacity: 0; transform: translateY(26px) scale(0.985); }
+  65%  { opacity: 1; transform: translateY(-4px) scale(1.004); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ============================================================
+   LANDING
+   ============================================================ */
+
+.panesar-landing {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 38%, rgba(37, 99, 235, 0.055), transparent 44%),
+    var(--warm-ivory);
+  color: var(--panesar-black);
+}
+
+/* Architectural grid — fades toward the foot of the page. */
+.panesar-landing::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(rgba(15, 23, 42, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 23, 42, 0.055) 1px, transparent 1px);
+  background-size: 58px 58px;
+  -webkit-mask-image: linear-gradient(#000 8%, transparent 88%);
+  mask-image: linear-gradient(#000 8%, transparent 88%);
+  pointer-events: none;
+}
+
+/* --- Top brand bar ------------------------------------------------------- */
+.panesar-landing .pl-topbar {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: clamp(16px, 3vw, 28px) clamp(18px, 4vw, 42px);
+  animation: pl-fade 0.42s var(--ease) 1.22s both;
+}
+
+.panesar-landing .pl-brandmark {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+}
+
+.panesar-landing .pl-brandmark img {
+  width: 34px;
+  height: 34px;
+  display: block;
+  box-shadow: 0 0 0 1px rgba(23, 23, 23, 0.2);
+}
+
+.panesar-landing .pl-wordmark {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.panesar-landing .pl-wordmark .gold {
+  color: var(--deep-gold);
+}
+
+.panesar-landing .pl-topmeta {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--muted-text);
+  white-space: nowrap;
+}
+
+/* --- Side rails ---------------------------------------------------------- */
+.panesar-landing .pl-rail {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(119, 113, 104, 0.8);
+  writing-mode: vertical-rl;
+  animation: pl-fade 0.4s var(--ease) 1.35s both;
+}
+
+.panesar-landing .pl-rail.left {
+  left: 16px;
+  transform: translateY(-50%) rotate(180deg);
+}
+
+.panesar-landing .pl-rail.right {
+  right: 16px;
+  transform: translateY(-50%);
+}
+
+/* --- Hero ---------------------------------------------------------------- */
+.panesar-landing .pl-hero {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: clamp(24px, 5vh, 56px) clamp(20px, 6vw, 56px);
+}
+
+.panesar-landing .pl-monogram {
+  position: relative;
+  width: clamp(122px, 17vw, 168px);
+  aspect-ratio: 1;
+  animation: pl-monogram 0.55s var(--ease-out-expo) 0.05s both;
+}
+
+.panesar-landing .pl-monogram img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  box-shadow: 0 20px 34px -20px rgba(15, 23, 42, 0.5);
+}
+
+/* Restrained blueprint geometry: one rotating dashed ring, one hairline. */
+.panesar-landing .pl-monogram::before {
+  content: "";
+  position: absolute;
+  inset: -16px;
+  border: 1px dashed rgba(201, 168, 106, 0.6);
+  border-radius: 50%;
+  animation: pl-spin 26s linear infinite;
+}
+
+.panesar-landing .pl-monogram::after {
+  content: "";
+  position: absolute;
+  inset: -30px;
+  border: 1px solid rgba(201, 168, 106, 0.28);
+  border-radius: 50%;
+}
+
+.panesar-landing .pl-title {
+  margin: clamp(26px, 5vh, 40px) 0 0;
+  font-family: var(--font-editorial);
+  font-size: clamp(42px, 8vw, 96px);
+  font-weight: 700;
+  line-height: 1.02;
+  letter-spacing: 0.045em;
+  color: var(--panesar-black);
+}
+
+.panesar-landing .pl-title .pl-word {
+  display: inline-block;
+}
+
+.panesar-landing .pl-title .w-panesar {
+  animation: pl-word 0.45s var(--ease-out-expo) 0.5s both;
+}
+
+.panesar-landing .pl-title .w-living {
+  font-weight: 400;
+  color: var(--deep-gold);
+  animation: pl-word 0.45s var(--ease-out-expo) 0.7s both;
+}
+
+.panesar-landing .pl-kicker {
+  display: block;
+  margin-top: 20px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.38em;
+  text-transform: uppercase;
+  color: var(--muted-text);
+  animation: pl-rise 0.4s var(--ease) 0.95s both;
+}
+
+.panesar-landing .pl-rule {
+  display: block;
+  width: clamp(64px, 8vw, 96px);
+  height: 2px;
+  margin-top: 16px;
+  background: var(--champagne-gold);
+  transform-origin: center;
+  animation: pl-draw 0.42s var(--ease) 1.08s both;
+}
+
+.panesar-landing .pl-sub {
+  max-width: 560px;
+  margin: 20px 0 0;
+  font-size: clamp(13px, 1.4vw, 15px);
+  line-height: 1.7;
+  color: var(--muted-text);
+  animation: pl-rise 0.45s var(--ease) 1.2s both;
+}
+
+.panesar-landing .pl-enter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-width: 264px;
+  min-height: 54px;
+  margin-top: clamp(26px, 4.5vh, 38px);
+  padding: 0 26px;
+  border: 2px solid var(--panesar-black);
+  background: var(--panesar-black);
+  color: var(--pure-surface);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  box-shadow: 5px 5px 0 var(--champagne-gold);
+  transition:
+    transform 0.17s var(--ease),
+    box-shadow 0.17s var(--ease),
+    background 0.17s var(--ease);
+  animation: pl-rise 0.45s var(--ease) 1.3s both;
+}
+
+.panesar-landing .pl-enter:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 7px 7px 0 var(--champagne-gold);
+}
+
+.panesar-landing .pl-enter:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--deep-gold);
+}
+
+.panesar-landing .pl-enter .arrow {
+  transition: transform 0.17s var(--ease);
+}
+
+.panesar-landing .pl-enter:hover .arrow {
+  transform: translateX(3px);
+}
+
+.panesar-landing .pl-caption {
+  position: relative;
+  z-index: 2;
+  padding: 0 20px clamp(20px, 4vh, 30px);
+  text-align: center;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(119, 113, 104, 0.85);
+  animation: pl-fade 0.4s var(--ease) 1.4s both;
+}
+
+/* ============================================================
+   LOGIN — split brand / form composition
+   ============================================================ */
+
+.panesar-login {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.98fr);
+}
+
+/* --- Left: brand world --------------------------------------------------- */
+.panesar-brand {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: clamp(36px, 4.5vw, 60px) clamp(28px, 4.5vw, 60px);
+  background:
+    radial-gradient(circle at 16% 86%, rgba(37, 99, 235, 0.16), transparent 44%),
+    radial-gradient(circle at 84% 8%, rgba(201, 168, 106, 0.13), transparent 42%),
+    var(--panesar-black);
+  color: var(--pure-surface);
+}
+
+/* Blueprint grid over the dark world. */
+.panesar-brand::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.5) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.5) 1px, transparent 1px);
+  background-size: 46px 46px;
+  opacity: 0.07;
+  pointer-events: none;
+}
+
+.panesar-brand .plb-arc {
+  position: absolute;
+  left: -170px;
+  top: 16%;
+  z-index: 0;
+  width: 340px;
+  height: 340px;
+  border: 1px dashed rgba(201, 168, 106, 0.3);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: pl-spin 30s linear infinite;
+}
+
+.panesar-brand .plb-corner {
+  position: absolute;
+  z-index: 1;
+  width: 40px;
+  height: 40px;
+  pointer-events: none;
+}
+
+.panesar-brand .plb-corner::before,
+.panesar-brand .plb-corner::after {
+  content: "";
+  position: absolute;
+  background: rgba(201, 168, 106, 0.7);
+}
+
+.panesar-brand .plb-corner::before {
+  width: 100%;
+  height: 1px;
+}
+
+.panesar-brand .plb-corner::after {
+  width: 1px;
+  height: 100%;
+}
+
+.panesar-brand .plb-corner.tl { top: 22px; left: 22px; }
+.panesar-brand .plb-corner.tr { top: 22px; right: 22px; transform: rotate(90deg); }
+.panesar-brand .plb-corner.br { bottom: 22px; right: 22px; transform: rotate(180deg); }
+.panesar-brand .plb-corner.bl { bottom: 22px; left: 22px; transform: rotate(270deg); }
+
+.panesar-brand .plb-content {
+  position: relative;
+  z-index: 1;
+  width: min(480px, 100%);
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.panesar-brand .plb-logo {
+  position: relative;
+  width: clamp(142px, 17vw, 200px);
+  aspect-ratio: 1;
+  animation: pl-monogram 0.55s var(--ease-out-expo) 0.05s both;
+}
+
+.panesar-brand .plb-logo img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  box-shadow:
+    0 0 0 1px rgba(201, 168, 106, 0.5),
+    0 26px 50px -24px rgba(0, 0, 0, 0.85);
+}
+
+/* Restrained geometric animation: a slow dashed orbit around the emblem. */
+.panesar-brand .plb-logo::before {
+  content: "";
+  position: absolute;
+  inset: -17px;
+  border: 1px dashed rgba(201, 168, 106, 0.45);
+  border-radius: 50%;
+  animation: pl-spin 34s linear infinite;
+}
+
+.panesar-brand .plb-logo::after {
+  content: "";
+  position: absolute;
+  inset: -32px;
+  border: 1px solid rgba(201, 168, 106, 0.2);
+  border-radius: 50%;
+}
+
+.panesar-brand .plb-title {
+  margin-top: clamp(26px, 4vh, 38px);
+  font-family: var(--font-editorial);
+  font-size: clamp(30px, 3.4vw, 50px);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: 0.06em;
+  animation: pl-rise 0.5s var(--ease) 0.45s both;
+}
+
+.panesar-brand .plb-title .gold {
+  font-weight: 400;
+  color: var(--champagne-gold);
+}
+
+.panesar-brand .plb-kicker {
+  margin-top: 15px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: var(--champagne-gold);
+  animation: pl-rise 0.42s var(--ease) 0.62s both;
+}
+
+.panesar-brand .plb-rule {
+  width: 72px;
+  height: 3px;
+  margin-top: 18px;
+  background: var(--champagne-gold);
+  transform-origin: center;
+  animation: pl-draw 0.44s var(--ease) 0.74s both;
+}
+
+.panesar-brand .plb-copy {
+  max-width: 380px;
+  margin: 20px 0 0;
+  font-size: 13px;
+  line-height: 1.7;
+  color: rgba(245, 240, 232, 0.66);
+  animation: pl-rise 0.45s var(--ease) 0.86s both;
+}
+
+.panesar-brand .plb-foot {
+  position: relative;
+  z-index: 1;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(201, 168, 106, 0.75);
+  animation: pl-fade 0.42s var(--ease) 0.98s both;
+}
+
+/* --- Right: form world --------------------------------------------------- */
+.panesar-auth-side {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(36px, 5vw, 64px) clamp(26px, 5vw, 72px);
+  background: var(--warm-ivory);
+}
+
+/* Faint blueprint echo so both worlds read as one system. */
+.panesar-auth-side::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(rgba(15, 23, 42, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 23, 42, 0.05) 1px, transparent 1px);
+  background-size: 58px 58px;
+  -webkit-mask-image: radial-gradient(circle at 68% 42%, #000 0%, transparent 78%);
+  mask-image: radial-gradient(circle at 68% 42%, #000 0%, transparent 78%);
+  pointer-events: none;
+}
+
+.panesar-auth-side .pl-auth-meta {
+  position: absolute;
+  top: clamp(18px, 3vw, 30px);
+  right: clamp(22px, 3.5vw, 40px);
+  z-index: 1;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: rgba(15, 23, 42, 0.38);
+  animation: pl-fade 0.4s var(--ease) 0.6s both;
+}
+
+/* --- Login card ---------------------------------------------------------- */
+.panesar-login-card {
+  position: relative;
+  z-index: 2;
+  width: min(462px, 100%);
+  padding: clamp(30px, 3.4vw, 42px);
+  background: var(--pure-surface);
+  border: 2px solid var(--panesar-black);
+  box-shadow: 10px 10px 0 var(--panesar-black);
+  animation: pl-card-in 0.55s var(--ease-out-expo) 0.15s both;
+}
+
+/* Blue corner brackets — echo of the heading accent. */
+.panesar-login-card::before,
+.panesar-login-card::after {
+  content: "";
+  position: absolute;
+  width: 64px;
+  height: 64px;
+  pointer-events: none;
+}
+
+.panesar-login-card::before {
+  left: -2px;
+  top: -2px;
+  border-left: 2px solid var(--action-blue);
+  border-top: 2px solid var(--action-blue);
+}
+
+.panesar-login-card::after {
+  right: -2px;
+  bottom: -2px;
+  border-right: 2px solid var(--action-blue);
+  border-bottom: 2px solid var(--action-blue);
+}
+
+.panesar-login-card .pl-heading {
+  margin: 0;
+  font-size: clamp(34px, 3.6vw, 44px);
+  font-weight: 700;
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+  color: var(--panesar-black);
+}
+
+.panesar-login-card .pl-heading .blue {
+  color: var(--action-blue);
+}
+
+.panesar-login-card .pl-lede {
+  margin: 12px 0 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--muted-text);
+}
+
+/* Error presentation — the existing Toast, tuned for the card. */
+.panesar-login-card .pl-error {
+  margin-top: 18px;
+}
+
+.panesar-login-card .pl-error .toast {
+  margin: 0;
+  color: var(--error-ink);
+}
+
+.panesar-login-card .pl-retry {
+  width: 100%;
+  margin-top: 16px;
+  background: var(--pure-surface);
+  color: var(--panesar-black);
+}
+
+.panesar-login-card .pl-form {
+  display: grid;
+  gap: 16px;
+  margin-top: 26px;
+}
+
+.panesar-login-card .pl-field {
+  display: grid;
+  gap: 8px;
+}
+
+.panesar-login-card .pl-field label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted-text);
+}
+
+.panesar-login-card .pl-input {
+  width: 100%;
+  min-height: 50px;
+  padding: 12px 14px;
+  border: 2px solid var(--panesar-black);
+  border-radius: 0;
+  background: #ffffff;
+  color: var(--panesar-black);
+  font-size: 14px;
+  transition:
+    border-color 0.18s var(--ease),
+    box-shadow 0.18s var(--ease);
+}
+
+.panesar-login-card .pl-input::placeholder {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+.panesar-login-card .pl-input:hover:not(:disabled) {
+  box-shadow: 3px 3px 0 rgba(23, 23, 23, 0.16);
+}
+
+/* Blue focus treatment, replacing the generic ring for these two fields. */
+.panesar-login-card .pl-input:focus,
+.panesar-login-card .pl-input:focus-visible {
+  outline: none;
+  border-color: var(--action-blue);
+  box-shadow:
+    0 0 0 3px rgba(37, 99, 235, 0.18),
+    4px 4px 0 rgba(37, 99, 235, 0.24);
+}
+
+.panesar-login-card .pl-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.panesar-login-card .pl-submit {
+  min-height: 54px;
+  margin-top: 6px;
+  border: 2px solid var(--panesar-black);
+  background: var(--action-blue);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  box-shadow: 5px 5px 0 var(--panesar-black);
+  transition:
+    transform 0.17s var(--ease),
+    box-shadow 0.17s var(--ease),
+    background 0.17s var(--ease);
+}
+
+.panesar-login-card .pl-submit:hover:not(:disabled) {
+  background: var(--action-ink);
+  transform: translate(-2px, -2px);
+  box-shadow: 7px 7px 0 var(--panesar-black);
+}
+
+.panesar-login-card .pl-submit:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--panesar-black);
+}
+
+.panesar-login-card .pl-submit:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.panesar-login-card .pl-card-foot {
+  margin: 20px 0 0;
+  text-align: center;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted-text);
+}
+
+/* ============================================================
+   Responsive
+   ============================================================ */
+
+/* Tablet landscape: tighten both worlds before they crowd. */
+@media (max-width: 1080px) {
+  .panesar-login-card {
+    box-shadow: 8px 8px 0 var(--panesar-black);
+  }
+
+  .panesar-auth-side {
+    padding: clamp(30px, 4vw, 48px) clamp(22px, 4vw, 44px);
+  }
+}
+
+/* Side rails stop before they can crowd the hero. */
+@media (max-width: 767px) {
+  .panesar-landing .pl-rail {
+    display: none;
+  }
+}
+
+/* Tablet portrait down: stack brand above login, no clipping. */
+@media (max-width: 900px) {
+  .panesar-login {
+    grid-template-columns: 1fr;
+  }
+
+  .panesar-brand {
+    justify-content: center;
+    padding: clamp(34px, 8vw, 52px) clamp(24px, 7vw, 44px);
+  }
+
+  .panesar-brand .plb-content {
+    margin: 0 auto;
+  }
+
+  .panesar-brand .plb-copy {
+    display: none;
+  }
+
+  .panesar-auth-side {
+    align-items: flex-start;
+    padding: clamp(34px, 8vw, 56px) clamp(20px, 6vw, 36px) clamp(52px, 11vw, 80px);
+  }
+
+  .panesar-auth-side .pl-auth-meta {
+    display: none;
+  }
+}
+
+/* Phones: compact brand block, comfortable inputs, no overflow. */
+@media (max-width: 560px) {
+  .panesar-landing .pl-topbar {
+    padding: 16px 18px;
+  }
+
+  .panesar-landing .pl-topmeta {
+    display: none;
+  }
+
+  .panesar-landing .pl-monogram {
+    width: 118px;
+  }
+
+  .panesar-landing .pl-monogram::after {
+    inset: -24px;
+  }
+
+  .panesar-landing .pl-title {
+    font-size: clamp(40px, 13vw, 64px);
+  }
+
+  .panesar-landing .pl-enter {
+    min-width: 236px;
+    min-height: 50px;
+    padding: 0 18px;
+  }
+
+  .panesar-brand .plb-corner,
+  .panesar-brand .plb-logo::after {
+    display: none;
+  }
+
+  .panesar-brand .plb-logo {
+    width: 124px;
+  }
+
+  .panesar-brand .plb-foot {
+    align-self: center;
+    text-align: center;
+  }
+
+  .panesar-login-card {
+    padding: clamp(26px, 7vw, 32px) clamp(20px, 6vw, 26px);
+    box-shadow: 6px 6px 0 var(--panesar-black);
+  }
+
+  .panesar-login-card::before,
+  .panesar-login-card::after {
+    width: 44px;
+    height: 44px;
+  }
+
+  .panesar-login-card .pl-heading {
+    font-size: clamp(32px, 9vw, 38px);
+  }
+}
+
+/* ============================================================
+   Reduced motion — the design lands fully visible with no movement
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .panesar-landing,
+  .panesar-landing *,
+  .panesar-login,
+  .panesar-login * {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+
+
+

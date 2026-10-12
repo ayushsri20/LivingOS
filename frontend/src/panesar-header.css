@@ -1,0 +1,373 @@
+/* ============================================================
+   Panesar Living header — architectural construction.
+   React owns ONLY the lifecycle: full | short | settled.
+   All drawing, sliding, settling, reveal and gold finishing is
+   CSS/SVG here (viewBox 0 0 1800 360 = the approved artwork
+   ratio; `slice` maps the SVG exactly like object-fit: cover,
+   so one coordinate system serves every viewport).
+   Timeline on fresh entry (full ≈ 2.1s, then fully static):
+     0.00-0.45  paper canvas unrolls (blueprint atmosphere)
+     0.10-0.60  faint drafting rules draw
+     0.15-0.75  left + right structures draw toward the centre
+     0.26-1.30  pencil P sketches (stem, bowl, house, frame)
+     0.42-0.98  windows / rails / structural details develop
+     0.75-1.65  approved artwork resolves (left-to-right)
+     0.84-2.10  banner slides and physically settles into frame
+     1.12-1.56  gold finishing (frame + descriptor rules)
+     1.52-2.08  gold corner brackets + accent line complete
+     2.10+      static — identical to plh-final.webp
+   Section change (short): one quiet 650ms carve/settle only.
+   ============================================================ */
+
+/* The topbar becomes a column: banner on top, brand + nav row below.
+   The brand/nav markup, labels and routes are untouched — they are only
+   wrapped so they keep their original side-by-side layout. */
+.topbar.panesar-topbar {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 6px;
+}
+
+.panesar-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  min-width: 0;
+}
+
+/* --- Banner: architectural paper frame + canvas holding the artwork --- */
+.plh {
+  --plh-navy: #0f172a;
+  --plh-gold: #c9a86a;
+  --plh-paper: #f5f0e8;
+  --plh-ink: #111;
+
+  position: relative;
+  flex-shrink: 0;
+  width: 100%;
+  height: clamp(225px, 23vw, 360px);
+  overflow: hidden;
+  border: 3px solid var(--plh-ink);
+  box-shadow: 10px 10px 0 var(--plh-navy);
+  /* Paper + blueprint grid + static warm ambient, in one background. */
+  background:
+    radial-gradient(circle at 50% 50%, rgba(201, 168, 106, 0.25), transparent 29%),
+    linear-gradient(rgba(15, 23, 42, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 23, 42, 0.045) 1px, transparent 1px),
+    var(--plh-paper);
+  background-size: auto, 42px 42px, 42px 42px, auto;
+}
+
+.plh-canvas {
+  position: absolute;
+  inset: 14px;
+  overflow: hidden;
+  border: 2px solid var(--plh-ink);
+  background: #eee5d5;
+  box-shadow: 7px 7px 0 rgba(15, 23, 42, 0.1);
+}
+
+/* Gold corner brackets sit above the artwork. */
+.plh-corners span {
+  position: absolute;
+  z-index: 90;
+  width: 20px;
+  height: 20px;
+  border-color: var(--plh-gold);
+}
+.plh-corners .a { left: 9px; top: 9px; border-left: 2px solid; border-top: 2px solid; --cx: -6px; --cy: -6px; }
+.plh-corners .b { right: 9px; top: 9px; border-right: 2px solid; border-top: 2px solid; --cx: 6px; --cy: -6px; }
+.plh-corners .c { left: 9px; bottom: 9px; border-left: 2px solid; border-bottom: 2px solid; --cx: -6px; --cy: 6px; }
+.plh-corners .d { right: 9px; bottom: 9px; border-right: 2px solid; border-bottom: 2px solid; --cx: 6px; --cy: 6px; }
+
+/* Single stage: artwork + construction layer move together and settle.
+   Settled / short base state is the identity transform. */
+.plh-stage {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+}
+
+/* Approved artwork: fully visible at rest; desktop cover preserved. */
+.plh-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* --- Temporary construction layer -------------------------------------
+   Invisible by default (settled, short and reduced-motion all show just
+   the artwork). During `full` it holds every stroke: drafting rules, both
+   skylines, the pencil P and the gold finish. Coordinates are artwork
+   coordinates, so strokes land on the artwork they echo. */
+.plh-sketch {
+  position: absolute;
+  z-index: 30;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  pointer-events: none;
+}
+.plh-sketch .sk path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+.sk-rules path { stroke: rgba(15, 23, 42, 0.3); stroke-width: 1.4; }
+.sk-build path { stroke: rgba(28, 56, 92, 0.62); stroke-width: 1.8; }
+.sk-p path     { stroke: rgba(38, 40, 48, 0.85); stroke-width: 2.4; }
+.sk-p .p-frame { stroke: rgba(38, 40, 48, 0.55); stroke-width: 1.4; }
+.sk-p .p-ghost { stroke-width: 1.1; opacity: 0.4; }
+.sk-gold path  { stroke: var(--plh-gold); stroke-width: 2; }
+
+/* --- Keyframes ------------------------------------------------------- */
+@keyframes plhUnroll {
+  from { clip-path: inset(0 0 100% 0); }
+  to   { clip-path: inset(0 0 0 0); }
+}
+@keyframes plhDraw {
+  from { stroke-dashoffset: 1; }
+  to   { stroke-dashoffset: 0; }
+}
+@keyframes plhSketchFade {
+  0%   { opacity: 1; }
+  74%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+/* Artwork resolves left-to-right: P first, then PANESAR, LIVING and the
+   descriptor, with a small vertical settlement as it lands. */
+@keyframes plhArtResolve {
+  0% {
+    opacity: 0;
+    clip-path: inset(0 100% 0 0);
+    transform: translateY(-1.5%);
+    filter: blur(3px) saturate(0.55);
+  }
+  35% { opacity: 1; }
+  100% {
+    opacity: 1;
+    clip-path: inset(0 0 0 0);
+    transform: translateY(0);
+    filter: blur(0) saturate(1);
+  }
+}
+/* Slide + physical settle: hold slightly offset while the structure
+   draws, glide into place as the artwork resolves, overshoot a hair,
+   then settle exactly on the final position. The scale keeps the stage
+   covering the canvas at every step, so no bare edges ever show.
+   Magnitude stays inside the brief: ≤1.5% translate. */
+@keyframes plhStageSettle {
+  0%   { transform: translate(-1.2%, -0.4%) scale(1.03); }
+  42%  { transform: translate(-1.2%, -0.4%) scale(1.03); }
+  64%  { transform: translate(0.5%, 0.1%) scale(1.012); }
+  84%  { transform: translate(-0.1%, -0.02%) scale(1.004); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+@keyframes plhCornerIn {
+  from { opacity: 0; transform: translate(var(--cx), var(--cy)); }
+  to   { opacity: 1; transform: translate(0, 0); }
+}
+@keyframes plhAccent {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+/* Gold accent line along the bottom edge — settles at full width. */
+.plh-progress {
+  position: absolute;
+  z-index: 100;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  width: 100%;
+  background: var(--plh-gold);
+  box-shadow: 0 0 9px rgba(201, 168, 106, 0.5);
+  transform-origin: left center;
+}
+
+/* --- Section switch: the compact dual-carve sweep (short mode only).
+       Fresh entry uses the full construction sequence below.         --- */
+@keyframes plhCarve {
+  0% {
+    opacity: 0;
+    clip-path: polygon(
+      0 0, 0 100%, 0 100%, 0 100%, 0 100%,
+      100% 100%, 100% 100%, 100% 100%, 100% 0
+    );
+    filter: blur(2.8px) brightness(1.06);
+  }
+  18% {
+    opacity: 1;
+    clip-path: polygon(
+      0 0, 0 100%, 14% 100%, 29% 80%, 43% 61%,
+      57% 61%, 71% 80%, 86% 100%, 100% 100%, 100% 0
+    );
+    filter: blur(1.5px) brightness(1.035);
+  }
+  42% {
+    clip-path: polygon(
+      0 0, 0 100%, 31% 100%, 40% 82%, 47% 65%,
+      53% 65%, 60% 82%, 69% 100%, 100% 100%, 100% 0
+    );
+    filter: blur(0.65px) brightness(1.015);
+  }
+  68% {
+    clip-path: polygon(
+      0 0, 0 100%, 43% 100%, 47% 84%, 49.5% 69%,
+      50.5% 69%, 53% 84%, 57% 100%, 100% 100%, 100% 0
+    );
+    filter: blur(0.18px) brightness(1);
+  }
+  100% {
+    opacity: 1;
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+    filter: blur(0) brightness(1);
+  }
+}
+@keyframes plhProgress {
+  from { width: 0; }
+  to   { width: 100%; }
+}
+
+/* ============================================================
+   full — the architectural construction (≈2.1s, plays once on
+   fresh authenticated entry, then React flips to `settled` and
+   every rule below stops applying: base states = final look).
+   ============================================================ */
+.plh[data-mode="full"] .plh-canvas { animation: plhUnroll 450ms cubic-bezier(0.33, 1, 0.68, 1) both; }
+.plh[data-mode="full"] .plh-stage { animation: plhStageSettle 2100ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.plh[data-mode="full"] .plh-art { animation: plhArtResolve 900ms cubic-bezier(0.4, 0, 0.2, 1) 750ms both; }
+.plh[data-mode="full"] .plh-sketch { animation: plhSketchFade 1900ms linear 100ms both; }
+
+/* 0.10s — drafting rules: faint blueprint atmosphere */
+.plh[data-mode="full"] .sk-rules path { animation: plhDraw 500ms ease-out 100ms both; }
+
+/* 0.15s — both skylines draw together, from their outer edges inward */
+.plh[data-mode="full"] .sk-lp path,
+.plh[data-mode="full"] .sk-rp path { animation: plhDraw 600ms cubic-bezier(0.33, 1, 0.68, 1) 150ms both; }
+
+/* 0.42s — windows, rails, structural details develop */
+.plh[data-mode="full"] .sk-ld path,
+.plh[data-mode="full"] .sk-rd path { animation: plhDraw 560ms ease-out 420ms both; }
+
+/* 0.26s — pencil P: stem → bowl → house detail → ghost line → frame */
+.plh[data-mode="full"] .p-stem { animation: plhDraw 360ms ease-out 260ms both; }
+.plh[data-mode="full"] .p-bowl { animation: plhDraw 580ms cubic-bezier(0.33, 1, 0.68, 1) 400ms both; }
+.plh[data-mode="full"] .p-house { animation: plhDraw 400ms ease-out 640ms both; }
+.plh[data-mode="full"] .p-ghost { animation: plhDraw 450ms ease-out 700ms both; }
+.plh[data-mode="full"] .p-frame { animation: plhDraw 540ms ease-out 760ms both; }
+
+/* 1.12s — gold finish: frame turns gold, descriptor rules light up */
+.plh[data-mode="full"] .gold-frame { animation: plhDraw 380ms ease-out 1120ms both; }
+.plh[data-mode="full"] .gold-l,
+.plh[data-mode="full"] .gold-r { animation: plhDraw 360ms ease-out 1200ms both; }
+
+/* 1.52s — final chrome: corner brackets + accent line complete */
+.plh[data-mode="full"] .plh-corners .a { animation: plhCornerIn 380ms ease-out 1520ms both; }
+.plh[data-mode="full"] .plh-corners .b { animation: plhCornerIn 380ms ease-out 1580ms both; }
+.plh[data-mode="full"] .plh-corners .c { animation: plhCornerIn 380ms ease-out 1640ms both; }
+.plh[data-mode="full"] .plh-corners .d { animation: plhCornerIn 380ms ease-out 1700ms both; }
+.plh[data-mode="full"] .plh-progress { animation: plhAccent 420ms cubic-bezier(0.33, 1, 0.68, 1) 1500ms both; }
+
+/* --- short — section change: one quiet carve/settle (650ms).
+       No construction replay, no stage movement, no gold redraw.  --- */
+.plh[data-mode="short"] .plh-art {
+  animation: plhCarve 600ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.plh[data-mode="short"] .plh-progress {
+  animation: plhProgress 650ms linear both;
+}
+
+/* --- Responsive: smaller banner below 900px; contain keeps the whole
+       lockup visible (no clipped logo, no viewport maths). --- */
+@media (max-width: 900px) {
+  .topbar.panesar-topbar {
+    gap: 4px;
+    /* Bleed the artwork to the viewport edge so its outline lands exactly on
+       the content grid. Without this the 3px border sits inside the hero and
+       the two surfaces read as separate cards. Matches .content-wrap's own
+       padding at each breakpoint (see the <=600px override below). */
+    padding-inline: clamp(18px, 4vw, 48px);
+  }
+
+  .panesar-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .plh {
+    height: clamp(100px, 18vw, 160px);
+    box-shadow: 4px 4px 0 var(--plh-navy);
+  }
+
+  .plh-art {
+    object-fit: contain;
+  }
+
+  /* The artwork is contain-fit here, so the construction layer takes the
+     same 5:1 rect, centred — on a 5:1 box slice == meet, so strokes stay
+     registered with the artwork. One system, no per-viewport maths. */
+  .plh-sketch {
+    inset: auto;
+    left: 0;
+    top: 50%;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1800 / 360;
+    transform: translateY(-50%);
+  }
+}
+
+/* --- Phones: the hero stays a brand stage, not a banner. This block only ever
+   raises the approved header height below 480px; desktop and tablet keep the
+   rules above exactly. `contain` still shows the whole lockup, never cropped. */
+@media (max-width: 480px) {
+  .plh {
+    height: clamp(110px, 20vw, 160px);
+  }
+
+  /* Below 600px the content grid narrows to 14px, but App.css leaves the bar
+     at 15px. Follow the grid so the header outline and the hero share edges. */
+  .topbar.panesar-topbar {
+    padding-inline: 14px;
+  }
+
+  .plh-canvas {
+    inset: 8px;
+  }
+
+  /* The tall phone hero is a brand stage: the whole 5:1 lockup must read.
+     Below 900px the approved base switches art + sketch to contain; the
+     canvas keeps a 5:1 box so both stay registered and uncropped. */
+  .plh-canvas {
+    aspect-ratio: 1800 / 360;
+    height: auto;
+    max-height: 100%;
+    margin: auto;
+  }
+}
+
+/* --- Dashboard phone banner: editorial title, scoped so no other page moves.
+   `data-view="dashboard"` is the only hook; desktop keeps the shared banner.
+   The dashboard banner is hidden on phones: the hero + snapshot carry the
+   page identity, so the gold banner would only duplicate it. */
+/* --- Reduced motion: show the final header immediately, fully static. --- */
+@media (prefers-reduced-motion: reduce) {
+  .plh,
+  .plh * {
+    animation: none !important;
+  }
+
+  .plh-sketch {
+    display: none;
+  }
+}
