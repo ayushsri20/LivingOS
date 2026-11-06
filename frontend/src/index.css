@@ -1,56 +1,70 @@
 /* ============================================================================
-   PANESAR LIVING — PROPERTY OPERATIONS
-   Global tokens + base layer
+   PANESAR LIVING — Global tokens + base layer
 
    One source of truth. Every colour in the application resolves through a token
    here; component files never hard-code a hex value.
    ========================================================================== */
 
 :root {
-  /* --- Brand identity ------------------------------------------------- */
+  /* --- Brand identity: warm architectural canvas ---------------------- */
   --panesar-black: #171717;
-  --warm-ivory: #f5f0e8;
-  --pure-surface: #fffdf8;
+  --deep-navy: #0F172A;
+  --raised: #1E293B;
+  --steel: #334155;
+  --electric-blue: #2563EB;
+  --ice-blue: #60A5FA;
+  --ice-highlight: #93C5FD;
+  --primary-text: #171717;
+  --secondary-text: #475569;
+  --cool-border: rgba(23, 23, 23, 0.18);
 
-  /* --- Brand accent ---------------------------------------------------- */
-  --champagne-gold: #c9a86a;
-  --deep-gold: #a98245;
+  /* --- Baseline header brand tokens (header-only) ---------------------- */
+  --graphite: #171717;
+  --graphite-deep: #0F172A;
+  --brand-gold: #C9A86A;
+  --brand-gold-bright: #E8D8B5;
+  --warm-white: #FFFDF8;
 
-  /* --- Structure ------------------------------------------------------- */
-  --deep-navy: #0f172a;
-  --action-blue: #2563eb;
+  /* --- Building directory surfaces (photo mapping untouched) ---------- */
+  --building-card: #FFFDF8;
+  --building-raised: #F5F0E8;
+  --building-border: rgba(23, 23, 23, 0.18);
+  --building-accent: #2563EB;
+  --building-ice: #1D4ED8;
 
-  /* --- Semantic status ------------------------------------------------- */
-  --success: #10b981;
-  --warning: #f59e0b;
-  --error: #ef4444;
+  /* --- Shared interactive surfaces ------------------------------------ */
+  --graphite-surface: #FFFDF8;
+  --graphite-raised: #F5F0E8;
+  --brand-gold-soft: #C9A86A;
 
-  /* Readable text versions of the semantic hues (the base tones are tuned for
-     fills, not for 10-13px type on ivory). */
-  --success-ink: #0a7d52;
-  --warning-ink: #96620a;
-  --error-ink: #b32020;
-  --action-ink: #1d4ed8;
+  /* --- Semantic status (retained) -------------------------------------- */
+  --success: #10B981;
+  --warning: #F59E0B;
+  --error: #EF4444;
+  --success-ink: #047857;
+  --warning-ink: #B45309;
+  --error-ink: #B91C1C;
+  --action-ink: #1D4ED8;
+
+  /* --- Derived surfaces ------------------------------------------------ */
+  --surface: #FFFDF8;
+  --surface-sunken: #EEE8DD;
+  --surface-inverse: var(--deep-navy);
+  --hairline: rgba(23, 23, 23, 0.10);
+  --hairline-strong: rgba(23, 23, 23, 0.24);
+  --hairline-faint: rgba(23, 23, 23, 0.06);
+  --glass-hairline: rgba(37, 99, 235, 0.22);
+
+  /* --- Semantic tints -------------------------------------------------- */
+  --success-wash: rgba(16, 185, 129, 0.12);
+  --warning-wash: rgba(245, 158, 11, 0.14);
+  --error-wash: rgba(239, 68, 68, 0.12);
+  --action-wash: rgba(37, 99, 235, 0.10);
+  --glass-wash: rgba(255, 253, 248, 0.72);
 
   /* --- Text ------------------------------------------------------------ */
-  --muted-text: #777168;
-  --ink: var(--deep-navy);
-
-  /* --- Derived surfaces (restrained; see proportion target 85/10/3/2) ---- */
-  --surface: var(--pure-surface);
-  --surface-sunken: #fbf8f2;
-  --surface-inverse: var(--deep-navy);
-  --hairline: rgba(23, 23, 23, 0.15);
-  --hairline-strong: rgba(23, 23, 23, 0.32);
-  --hairline-faint: rgba(23, 23, 23, 0.08);
-  --gold-hairline: rgba(201, 168, 106, 0.42);
-
-  /* --- Semantic tints (backgrounds) ------------------------------------ */
-  --success-wash: rgba(16, 185, 129, 0.1);
-  --warning-wash: rgba(245, 158, 11, 0.12);
-  --error-wash: rgba(239, 68, 68, 0.09);
-  --action-wash: rgba(37, 99, 235, 0.08);
-  --gold-wash: rgba(201, 168, 106, 0.12);
+  --ink: var(--panesar-black);
+  --muted-text: var(--secondary-text);
 
   /* --- Typography ------------------------------------------------------ */
   --font-ui: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
@@ -60,17 +74,17 @@
   --font-display: var(--font-ui);
   --font-figure: var(--font-ui);
 
-  /* --- Motion: one tiered system --------------------------------------- */
-  --dur-fast: 150ms;    /* hover, press, focus, small feedback */
-  --dur-normal: 220ms; /* drawer, sheet, panel */
-  --dur-slow: 420ms;   /* brand reveal, value transitions */
-  --dur-reveal: 1250ms;/* full header brand reveal */
+  /* --- Motion -------------------------------------------------------- */
+  --dur-fast: 150ms;
+  --dur-normal: 220ms;
+  --dur-slow: 420ms;
+  --dur-reveal: 1250ms;
   --ease: cubic-bezier(0.2, 0, 0.2, 1);
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 
-  /* --- Elevation (rare by design) --------------------------------------- */
-  --shadow-panel: 0 24px 60px -24px rgba(15, 23, 42, 0.34);
-  --shadow-cta: 0 10px 24px -12px rgba(37, 99, 235, 0.5);
+  /* --- Elevation ----------------------------------------------------- */
+  --shadow-panel: 0 24px 60px -24px rgba(15, 23, 42, 0.28);
+  --shadow-cta: 4px 4px 0 var(--panesar-black);
 
   color-scheme: light;
 }
@@ -80,27 +94,25 @@
 
    The existing stylesheet (components.css / App.css) addresses colours through
    these names. Remapping them here re-skins every one of those rules to the
-   Panesar palette without rewriting a single line of the functional CSS — and
-   it removes #FFCC00 from the application entirely.
-
-   These are a compatibility layer, not a second design system. New rules use
-   the semantic tokens above directly.
+   Panesar palette without rewriting a single line of the functional CSS.
+   These are a compatibility layer, not a second design system.
    ------------------------------------------------------------------------- */
 :root {
-  --paper: var(--warm-ivory);
-  --white: var(--pure-surface);
+  /* Warm paper canvas, ivory surfaces, black ink. */
+  --paper: #F5F0E8;
+  --white: #FFFDF8;
 
-  /* The old saturated yellow becomes champagne gold: same role (emphasis),
-     heritage colour instead of highlighter colour. */
-  --yellow: var(--champagne-gold);
+  /* Gold is reserved for brand details; interactive selected states use blue. */
+  --yellow: var(--brand-gold);
+  --blue: #2563EB;
 
-  --blue: var(--action-blue);
+  /* Semantic statuses keep their approved hues */
   --red: var(--error);
   --green: var(--success);
 
-  /* Structure is hairline-thin, and shadows are reserved for elevated layers. */
-  --line: 1px solid var(--hairline-strong);
-  --hard-shadow: 0 6px 20px -10px rgba(15, 23, 42, 0.3);
+  /* Cool hairline borders — blue guides, never dominates */
+  --line: 1px solid var(--panesar-black);
+  --hard-shadow: 4px 4px 0 var(--panesar-black);
 }
 
 * {
@@ -110,7 +122,7 @@
 html {
   min-width: 320px;
   min-height: 100%;
-  background: var(--warm-ivory);
+  background: var(--paper);
   -webkit-text-size-adjust: 100%;
 }
 
@@ -118,8 +130,10 @@ body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
-  background: var(--warm-ivory);
-  color: var(--ink);
+  background:
+    radial-gradient(90% 40% at 50% 0%, rgba(37, 99, 235, 0.04), transparent 65%),
+    #F5F0E8;
+  color: var(--panesar-black);
   font-family: var(--font-ui);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -145,13 +159,13 @@ button {
 
 /* One visible, high-contrast focus treatment everywhere. */
 :focus-visible {
-  outline: 2px solid var(--action-blue);
+  outline: 2px solid var(--electric-blue);
   outline-offset: 3px;
   border-radius: 1px;
 }
 
 ::selection {
-  background: var(--champagne-gold);
+  background: rgba(37, 99, 235, 0.18);
   color: var(--panesar-black);
 }
 
@@ -167,4 +181,3 @@ button {
     scroll-behavior: auto !important;
   }
 }
-

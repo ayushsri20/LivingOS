@@ -38,20 +38,27 @@ load_dotenv(BASE_DIR / ".env")
 # Security
 # -----------------------------------------------------------------------------
 
+# SECURITY: single source of truth for the DEBUG flag so its meaning cannot
+# drift between modules. Defaults to False so a production start is hardened
+# when the environment is left unset (never "True" by default).
+_DEBUG_RAW = os.getenv("DEBUG", "False").lower()
+DEBUG = _DEBUG_RAW in {"1", "true", "yes", "on"}
 SECRET_KEY = os.getenv("SECRET_KEY")
 
 if not SECRET_KEY:
-    # Useful for local development only.
-    # Production should always provide SECRET_KEY through environment variables.
-    SECRET_KEY = f"django-insecure-{get_random_secret_key()}"
+    # Local development only: regenerate an ephemeral key each process start.
+    # In production (DEBUG=False) a missing SECRET_KEY is a hard configuration
+    # error, so sessions are never key with an insecure random value.
+    if DEBUG:
+        SECRET_KEY = f"django-insecure-{get_random_secret_key()}"
+    else:
+        raise RuntimeError(
+            "PANESAR LIVING: SECRET_KEY environment variable is required "
+            "when DEBUG=False. Set SECRET_KEY before deploying."
+        )
 
 
-DEBUG = os.getenv("DEBUG", "True").lower() in {
-    "1",
-    "true",
-    "yes",
-    "on",
-}
+
 
 
 def env_list(name: str, default: str = "") -> list[str]:
@@ -69,16 +76,25 @@ ALLOWED_HOSTS = list(
             "127.0.0.1",
             "localhost",
             "testserver",
+            "panesar-pg-772316.onrender.com",
             *env_list("ALLOWED_HOSTS"),
         ]
     )
 )
 
 
-CSRF_TRUSTED_ORIGINS = env_list(
-    "CSRF_TRUSTED_ORIGINS",
-    "http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174,http://192.168.1.18:5173,https://sanded-outlet-herbs.ngrok-free.dev",
-)
+CSRF_TRUSTED_ORIGINS = list(dict.fromkeys([
+    *env_list(
+        "CSRF_TRUSTED_ORIGINS",
+        "http://localhost:5173,http://localhost:5174,"
+        "http://127.0.0.1:5173,http://127.0.0.1:5174,"
+        "http://192.168.1.18:5173,http://192.168.0.105:5173",
+    ),
+    "https://sanded-outlet-herbs.ngrok-free.dev",
+    "https://*.ngrok-free.dev",
+    "https://*.ngrok-free.app",
+    "https://livingos-frontend.vercel.app",
+]))
 
 
 # -----------------------------------------------------------------------------
@@ -92,7 +108,10 @@ CSRF_TRUSTED_ORIGINS = env_list(
 # Set CORS_ALLOWED_ORIGINS to the deployed Vercel domain(s), comma separated.
 # Nothing is enabled during local development, where both run on localhost.
 if not DEBUG:
-    CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS")
+    CORS_ALLOWED_ORIGINS = env_list(
+        "CORS_ALLOWED_ORIGINS",
+        "https://livingos-frontend.vercel.app",
+    )
 
     # Optional regex for preview/staging Vercel domains, e.g.
     # r"https://panesar-.*\.vercel\.app"
@@ -282,6 +301,11 @@ WHITENOISE_AUTOREFRESH = DEBUG
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+# Test-only hook: the direct-media regression test points a throwaway DEBUG
+# server at an isolated temp dir via MEDIA_ROOT_TEST. Never set in real envs.
+if os.getenv("MEDIA_ROOT_TEST"):
+    MEDIA_ROOT = Path(os.getenv("MEDIA_ROOT_TEST"))
 
 
 # Optional S3 media storage.

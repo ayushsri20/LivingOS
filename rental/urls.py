@@ -26,6 +26,10 @@ urlpatterns = [
     path('api/guest/<int:guest_id>/update/', views.update_guest, name='update_guest'),
     path('api/guest/<int:guest_id>/checkout/', views.checkout_guest, name='checkout_guest'),
     path('api/guest/<int:guest_id>/delete/', views.delete_guest, name='delete_guest'),
+    # Secure identity documents: authenticated upload / protected view / delete.
+    path('api/guest/<int:guest_id>/identity/<str:document>/upload/', views.upload_guest_identity_document, name='upload_guest_identity_document'),
+    path('api/guest/<int:guest_id>/identity/<str:document>/file/', views.guest_identity_file, name='guest_identity_file'),
+    path('api/guest/<int:guest_id>/identity/<str:document>/delete/', views.delete_guest_identity_document, name='delete_guest_identity_document'),
     # Restore original and add new
     path('api/available-rooms/', views.get_available_rooms, name='get_available_rooms'),
     path('api/submit-booking/', views.submit_booking, name='submit_booking'),

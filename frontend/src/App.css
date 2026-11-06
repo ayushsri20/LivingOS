@@ -42,7 +42,7 @@
   place-items: center;
   border: var(--line);
   background: var(--yellow);
-  box-shadow: 3px 3px 0 var(--ink);
+  box-shadow: 3px 3px 0 var(--panesar-black);
   font-family: var(--font-display);
   font-size: 24px;
   font-weight: 700;
@@ -78,12 +78,14 @@
 .login-form button,
 .submit-button {
   min-height: 42px;
-  border: var(--line);
-  background: var(--white);
-  box-shadow: 3px 3px 0 var(--ink);
+  border: 2px solid var(--panesar-black);
+  border-radius: 0;
+  background: var(--electric-blue);
+  color: #fff;
+  box-shadow: 4px 4px 0 var(--panesar-black);
   cursor: pointer;
-  font-weight: 700;
-  transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
+  font-weight: 800;
+  transition: filter var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
 }
 
 .top-actions button {
@@ -96,7 +98,7 @@
 .login-form button:hover,
 .submit-button:hover {
   transform: translate(-2px, -2px);
-  box-shadow: 5px 5px 0 var(--ink);
+  box-shadow: 6px 6px 0 var(--panesar-black);
 }
 
 .content-wrap {
@@ -114,8 +116,8 @@
   gap: 28px;
   padding: clamp(24px, 4vw, 48px);
   border: 3px solid var(--ink);
-  background: var(--yellow);
-  box-shadow: 8px 8px 0 var(--ink);
+  background: var(--white);
+  box-shadow: 8px 8px 0 var(--panesar-black);
   animation: rise-in var(--dur-normal) var(--ease) both;
 }
 
@@ -150,7 +152,7 @@
   padding: 20px;
   border: var(--line);
   background: var(--white);
-  box-shadow: 5px 5px 0 var(--ink);
+  box-shadow: 5px 5px 0 var(--panesar-black);
 }
 
 .hero-meta-row {
@@ -227,7 +229,7 @@
   padding: 16px;
   border: var(--line);
   background: var(--white);
-  box-shadow: 4px 4px 0 var(--ink);
+  box-shadow: 4px 4px 0 var(--panesar-black);
   animation: rise-in var(--dur-normal) var(--ease) both;
 }
 
@@ -271,7 +273,7 @@
 }
 
 .analytics-card.yellow {
-  background: var(--yellow);
+  background: var(--warning-wash);
 }
 
 .toolbar-panel {
@@ -337,7 +339,7 @@
   padding: 7px 11px;
   border: 1.5px solid var(--ink);
   background: var(--white);
-  box-shadow: 2px 2px 0 var(--ink);
+  box-shadow: 2px 2px 0 var(--panesar-black);
   cursor: pointer;
   font-size: 11px;
   font-weight: 700;
@@ -356,13 +358,82 @@
   padding: 4px 4px 9px;
 }
 
+/* The directory renders .building-grid (not .building-strip); keep them in sync. */
+.building-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+  min-width: 0;
+  padding: 4px 4px 9px;
+}
+
+.rooms-building-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: stretch;
+}
+
+.rooms-building-grid .building-card {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.rooms-building-label,
+.rooms-building-count {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.rooms-building-label {
+  letter-spacing: 0.05em;
+}
+
+.rooms-building-name {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.rooms-building-count {
+  color: var(--muted-text);
+}
+
+.rooms-building-grid .building-card.active .rooms-building-count {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.content-wrap[data-view="residents"] .building-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: stretch;
+}
+
+.content-wrap[data-view="residents"] .building-card {
+  display: flex;
+  min-height: 84px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.content-wrap[data-view="residents"] .building-card > div:last-child {
+  color: var(--muted-text);
+}
+
+.content-wrap[data-view="residents"] .building-card.active > div:last-child {
+  color: rgba(255, 255, 255, 0.78);
+}
+
 .building-card {
   min-width: 0;
   min-height: 84px;
   padding: 12px;
   border: var(--line);
   background: var(--white);
-  box-shadow: 3px 3px 0 var(--ink);
+  box-shadow: 3px 3px 0 var(--panesar-black);
   text-align: left;
   cursor: pointer;
   transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
@@ -371,7 +442,7 @@
 .building-card:hover,
 .building-card.active {
   transform: translate(-2px, -2px);
-  box-shadow: 5px 5px 0 var(--ink);
+  box-shadow: 5px 5px 0 var(--panesar-black);
 }
 
 .building-card.active {
@@ -416,7 +487,7 @@
   margin: 14px 0;
   padding: 12px 15px;
   border: var(--line);
-  box-shadow: 3px 3px 0 var(--ink);
+  box-shadow: 3px 3px 0 var(--panesar-black);
   font-weight: 700;
 }
 
@@ -440,15 +511,24 @@
   padding: 18px;
   border: 2px solid var(--ink);
   background: var(--white);
-  box-shadow: 5px 5px 0 var(--ink);
+  box-shadow: 5px 5px 0 var(--panesar-black);
   cursor: pointer;
   animation: rise-in var(--dur-normal) var(--ease) both;
   transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
 }
 
+/* Staggered entrance so cards reveal in sequence rather than all at once. */
+.room-card:nth-child(1)  { animation-delay: 0s; }
+.room-card:nth-child(2)  { animation-delay: 0.07s; }
+.room-card:nth-child(3)  { animation-delay: 0.14s; }
+.room-card:nth-child(4)  { animation-delay: 0.21s; }
+.room-card:nth-child(5)  { animation-delay: 0.28s; }
+.room-card:nth-child(6)  { animation-delay: 0.35s; }
+.room-card:nth-child(n+7) { animation-delay: 0.42s; }
+
 .room-card:hover {
   transform: translate(-2px, -2px);
-  box-shadow: 7px 7px 0 var(--ink);
+  box-shadow: 7px 7px 0 var(--panesar-black);
 }
 
 .room-card.paid {
@@ -456,7 +536,7 @@
 }
 
 .room-card.partial {
-  border-top: 7px solid var(--yellow);
+  border-top: 7px solid var(--warning);
 }
 
 .room-card.due {
@@ -474,6 +554,10 @@
 }
 
 .status-tag {
+  background: var(--red);
+}
+
+.status-tag.due {
   background: var(--red);
 }
 
@@ -611,7 +695,7 @@
   padding: 17px;
   border: var(--line);
   background: var(--white);
-  box-shadow: 4px 4px 0 var(--ink);
+  box-shadow: 4px 4px 0 var(--panesar-black);
 }
 
 .detail-row {
@@ -665,7 +749,7 @@
   display: inline-block;
   padding: 6px 9px;
   border: 1px solid var(--ink);
-  background: var(--yellow);
+  background: var(--white);
   color: var(--ink);
   font-size: 11px;
   font-weight: 700;
@@ -694,12 +778,14 @@
   width: 100%;
   margin-top: 12px;
   padding: 10px 14px;
-  background: var(--yellow);
 }
 
 .submit-button.alt {
-  background: var(--blue);
-  color: #fff;
+  /* Secondary: graphite/navy fill, cool border, light text. */
+  background: linear-gradient(180deg, var(--raised) 0%, var(--deep-navy) 100%);
+  color: var(--primary-text);
+  border-color: var(--cool-border);
+  box-shadow: none;
 }
 
 .submit-button:disabled,
@@ -755,8 +841,8 @@
   width: min(480px, 100%);
   padding: clamp(24px, 6vw, 42px);
   border: 3px solid var(--ink);
-  background: var(--yellow);
-  box-shadow: 9px 9px 0 var(--ink);
+  background: var(--white);
+  box-shadow: 9px 9px 0 var(--panesar-black);
   animation: rise-in var(--dur-normal) var(--ease) both;
 }
 
@@ -779,8 +865,6 @@
 .login-form button {
   min-height: 48px;
   margin-top: 5px;
-  background: var(--blue);
-  color: #fff;
 }
 
 .login-panel .status.error {
@@ -794,12 +878,26 @@
 .error-state button {
   min-height: 42px;
   padding: 8px 13px;
-  border: var(--line);
-  background: var(--blue);
-  box-shadow: 3px 3px 0 var(--ink);
+  border: 2px solid var(--panesar-black);
+  border-radius: 0;
+  background: var(--electric-blue);
   color: #fff;
+  box-shadow: 4px 4px 0 var(--panesar-black);
   cursor: pointer;
-  font-weight: 700;
+  font-weight: 800;
+  transition: filter var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+}
+
+.retry-button:hover,
+.error-state button:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 var(--panesar-black);
+}
+
+.retry-button:active,
+.error-state button:active {
+  transform: translateY(1px);
+  box-shadow: 1px 1px 0 var(--panesar-black);
 }
 
 .error-state {
@@ -823,6 +921,85 @@
   padding: 20px;
   border: var(--line);
   background: var(--white);
+}
+
+/* --- Directory loading skeletons: mirror the real building / room layout   */
+/*    so the first payload lands into a shape the user already expects.      */
+.loading-shell--rooms {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  min-height: auto;
+  padding: clamp(18px, 4vw, 48px);
+  gap: 26px;
+  color: var(--muted-text);
+  font-weight: 700;
+  font-size: 14px;
+  text-align: left;
+  width: 100%;
+}
+.loading-shell--rooms .loading-label {
+  margin-bottom: 6px;
+}
+.skeleton-building-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+  min-width: 0;
+  width: 100%;
+}
+.skeleton-building {
+  border: var(--line);
+  background: var(--white);
+  box-shadow: 3px 3px 0 var(--panesar-black);
+  min-height: 84px;
+  padding: 12px;
+  width: 100%;
+}
+.skeleton-room-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  width: 100%;
+}
+.skeleton-room {
+  border: 2px solid var(--ink);
+  background: var(--white);
+  box-shadow: 5px 5px 0 var(--panesar-black);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 330px;
+  width: 100%;
+}
+.skeleton-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+.skeleton-line {
+  background: var(--deep-navy);
+  border-radius: 2px;
+  animation: skeleton-pulse var(--dur-normal) var(--ease) infinite alternate;
+}
+.skeleton-line--name { height: 20px; width: 60%; }
+.skeleton-line--number { height: 32px; width: 85%; margin: 4px 0; }
+.skeleton-line--count { height: 14px; width: 40%; }
+.skeleton-line--short { height: 13px; width: 60%; }
+.skeleton-line--status { height: 20px; width: 40%; }
+.skeleton-line--room { height: 26px; width: 90%; margin: 4px 0 8px; }
+.skeleton-line--occupancy { height: 14px; width: 40%; margin-bottom: 8px; }
+.skeleton-meta { display: flex; flex-direction: column; gap: 6px; margin-top: auto; }
+
+@keyframes skeleton-pulse {
+  from { opacity: 0.45; }
+  to { opacity: 0.85; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-line { animation: none !important; opacity: 1 !important; }
 }
 
 @keyframes rise-in {
@@ -857,8 +1034,24 @@
 }
 
 @media (max-width: 1100px) {
-  .building-strip {
+  .building-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .content-wrap[data-view="residents"] .building-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .content-wrap[data-view="residents"] .building-grid > :last-child:nth-child(3n + 1) {
+    grid-column: 2;
+  }
+
+  .rooms-building-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .rooms-building-grid > :last-child:nth-child(3n + 1) {
+    grid-column: 2;
   }
 
   .analytics-grid {
@@ -924,7 +1117,7 @@
   .hero-panel {
     gap: 20px;
     padding: 23px 18px;
-    box-shadow: 5px 5px 0 var(--ink);
+    box-shadow: 5px 5px 0 var(--panesar-black);
   }
 
   .hero-main p {
@@ -967,12 +1160,129 @@
 
   .room-grid {
     grid-template-columns: 1fr;
-    gap: 14px;
+    gap: 10px;
   }
 
-  .building-strip {
+  .room-grid .room-card {
+    padding: 14px;
+  }
+
+  .room-grid .room-card > div:first-child {
+    margin-bottom: 8px !important;
+  }
+
+  .room-grid .room-card > div:nth-child(2) {
+    margin-bottom: 10px !important;
+    font-size: 14px !important;
+  }
+
+  .room-grid .room-card > div:nth-child(3) {
+    gap: 6px !important;
+    padding-top: 10px !important;
+  }
+
+  .room-grid .stat-row {
+    gap: 8px;
+    padding: 4px 0;
+  }
+
+  .room-grid .stat-row-label {
+    flex: 1;
+    font-size: 10px;
+  }
+
+  .room-grid .stat-row-value {
+    min-width: 9ch;
+    text-align: right;
+    font-size: 13px;
+  }
+
+  .room-grid .room-card > div:last-child {
+    gap: 8px;
+    margin-top: 10px !important;
+  }
+
+  .building-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
+  }
+
+  .content-wrap[data-view="residents"] .building-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    padding-bottom: 2px;
+  }
+
+  .content-wrap[data-view="residents"] .building-grid > :last-child:nth-child(2n + 1) {
+    grid-column: 1 / -1;
+    justify-self: center;
+    width: min(100%, calc(50% - 5px));
+  }
+
+  .content-wrap[data-view="residents"] .building-grid + .surface {
+    margin-bottom: 14px !important;
+  }
+
+  .content-wrap[data-view="residents"] {
+    padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .content-wrap[data-view="residents"] .resident-card {
+    padding: 12px;
+  }
+
+  .content-wrap[data-view="residents"] .resident-card > div:first-child {
+    margin-bottom: 8px !important;
+  }
+
+  .content-wrap[data-view="residents"] .resident-card > div:nth-child(2) {
+    margin-bottom: 9px !important;
+  }
+
+  .content-wrap[data-view="residents"] .resident-card > div:nth-child(3) {
+    gap: 5px !important;
+    padding-top: 9px !important;
+  }
+
+  .content-wrap[data-view="residents"] .resident-card .stat-row {
+    padding: 3px 0;
+  }
+
+  .content-wrap[data-view="residents"] .resident-card .resident-profile-action {
+    min-height: 42px;
+    margin-top: 10px;
+  }
+
+  .content-wrap[data-view="residents"] .resident-card .stat-row-value {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    text-align: right;
+    white-space: normal;
+  }
+
+  .rooms-building-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding-bottom: 3px;
+  }
+
+  .rooms-building-grid > :last-child:nth-child(2n + 1) {
+    grid-column: 1 / -1;
+    justify-self: center;
+    width: min(100%, calc(50% - 5px));
+  }
+
+  .rooms-building-grid + .surface {
+    margin-bottom: 14px !important;
+  }
+
+  .skeleton-building-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .skeleton-room-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
   }
 
   .occupancy-panel {
@@ -1001,7 +1311,7 @@
     padding: 8px;
     border: var(--line);
     background: var(--paper);
-    box-shadow: 4px 4px 0 var(--ink);
+    box-shadow: 4px 4px 0 var(--panesar-black);
   }
 
   .mobile-nav button {
@@ -1013,7 +1323,7 @@
   }
 
   .mobile-nav button:active {
-    background: var(--yellow);
+    background: var(--action-wash);
   }
 
   .drawer-header {
@@ -1025,4 +1335,510 @@
   .detail-surface {
     padding: 14px;
   }
+
+  .content-wrap[data-view="payments"] .payments-layout {
+    min-width: 0;
+  }
+
+  .content-wrap[data-view="payments"] > .payments-layout > .section-head:first-child {
+    align-items: flex-end;
+    margin: 0 0 10px;
+  }
+
+  .content-wrap[data-view="payments"] > .payments-layout > .section-head:first-child h2 {
+    margin-top: 3px;
+    font-size: 20px;
+  }
+
+  .content-wrap[data-view="payments"] > .payments-layout > .section-head:first-child > span {
+    max-width: 42%;
+    font-size: 10px;
+    line-height: 1.35;
+  }
+
+  .content-wrap[data-view="payments"] .payments-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: minmax(104px, auto);
+    gap: 10px;
+    width: 100%;
+    min-width: 0;
+    margin: 0 0 14px;
+  }
+
+  .content-wrap[data-view="payments"] .payments-metrics > .metric-card {
+    min-width: 0;
+    min-height: 0;
+    padding: 12px;
+    overflow: hidden;
+  }
+
+  .content-wrap[data-view="payments"] .payments-metrics > .metric-card span {
+    font-size: 10px;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+
+  .content-wrap[data-view="payments"] .payments-metrics > .metric-card strong {
+    margin-top: 7px;
+    font-size: clamp(18px, 5vw, 23px);
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    line-height: 1.12;
+  }
+
+  @media (max-width: 340px) {
+    .content-wrap[data-view="payments"] .payments-metrics {
+      display: flex;
+      overflow-x: auto;
+      overscroll-behavior-x: contain;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .content-wrap[data-view="payments"] .payments-metrics::-webkit-scrollbar {
+      display: none;
+    }
+
+    .content-wrap[data-view="payments"] .payments-metrics > .metric-card {
+      flex: 0 0 min(78%, 280px);
+      scroll-snap-align: start;
+    }
+  }
+
+  .content-wrap[data-view="payments"] .payments-layout > .surface:nth-child(3) {
+    min-width: 0;
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .content-wrap[data-view="payments"] .payments-layout > .surface:nth-child(3) > div {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  .content-wrap[data-view="payments"] .payments-layout > .surface:nth-child(3) .building-grid {
+    width: 100%;
+    min-width: 0;
+    margin-bottom: 0;
+    gap: 6px !important;
+    padding: 3px 2px 6px;
+  }
+
+  .content-wrap[data-view="payments"] .payments-layout > .surface:nth-child(3) > div:first-child .building-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .content-wrap[data-view="payments"] .payments-layout > .surface:nth-child(3) > div:nth-child(2) .building-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .content-wrap[data-view="payments"] .payments-layout > .surface:nth-child(3) .building-card {
+    min-width: 0 !important;
+    min-height: 40px;
+    padding: 7px 5px !important;
+    text-align: center;
+    font-size: 11px;
+    overflow-wrap: anywhere;
+  }
+
+  .content-wrap[data-view="payments"] .payments-layout > .surface:nth-child(3) input {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .content-wrap[data-view="payments"] .payments-ledger {
+    min-width: 0;
+    padding: 12px;
+  }
+
+  .content-wrap[data-view="payments"] .payment-row {
+    min-width: 0;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .content-wrap[data-view="payments"] .payment-room-details {
+    min-width: 0;
+    gap: 10px;
+  }
+
+  .content-wrap[data-view="payments"] .payment-room-details > div {
+    min-width: 0;
+  }
+
+  .content-wrap[data-view="payments"] .payment-room-details strong {
+    overflow-wrap: anywhere;
+  }
+
+  .content-wrap[data-view="payments"] .payment-room-number {
+    font-size: 24px !important;
+  }
+
+  .content-wrap[data-view="payments"] .payment-financials {
+    min-width: 0;
+    gap: 10px;
+    padding-top: 10px;
+  }
+
+  .content-wrap[data-view="payments"] .payment-financials > div {
+    min-width: 0;
+  }
+
+  .content-wrap[data-view="payments"] .payment-financials span {
+    font-size: 9px;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+
+  .content-wrap[data-view="payments"] .payment-financials strong {
+    font-size: 15px;
+    overflow-wrap: anywhere;
+  }
+
+  .content-wrap[data-view="payments"] .payment-actions {
+    min-width: 0;
+    gap: 8px;
+  }
+
+  .content-wrap[data-view="payments"] .payment-actions button {
+    min-width: 0;
+    min-height: 44px;
+    padding: 8px 6px;
+    font-size: 11px;
+    white-space: normal;
+  }
+
+  .content-wrap[data-view="electricity"] > div,
+  .content-wrap[data-view="expenses"] > div,
+  .content-wrap[data-view="analytics"] > div {
+    min-width: 0;
+  }
+
+  .content-wrap[data-view="electricity"] > div > .surface:first-child {
+    gap: 10px;
+    margin-bottom: 14px !important;
+    padding: 12px !important;
+  }
+
+  .content-wrap[data-view="electricity"] > div > .surface:first-child > div:first-child {
+    min-width: 0;
+  }
+
+  .content-wrap[data-view="electricity"] > div > .surface:first-child .brand-mark {
+    flex: 0 0 40px;
+    width: 40px !important;
+    height: 40px !important;
+  }
+
+  .content-wrap[data-view="electricity"] > div > .building-grid {
+    width: 100%;
+    min-width: 0;
+    gap: 8px;
+    padding: 3px 2px 6px;
+  }
+
+  .content-wrap[data-view="electricity"] > div > .building-grid .building-card {
+    min-height: 68px;
+  }
+
+  .content-wrap[data-view="electricity"] .building-grid + .surface {
+    margin-bottom: 14px !important;
+    padding: 10px 12px !important;
+  }
+
+  .content-wrap[data-view="electricity"] .room-grid .room-card {
+    min-width: 0;
+    padding: 12px;
+  }
+
+  .content-wrap[data-view="electricity"] .room-grid .room-card > div:first-child > .eyebrow {
+    max-width: 62%;
+    overflow-wrap: anywhere;
+    text-align: right;
+  }
+
+  .content-wrap[data-view="electricity"] .room-grid .room-card > div:nth-child(2) {
+    gap: 6px !important;
+    margin-top: 10px !important;
+    padding-top: 10px !important;
+  }
+
+  .content-wrap[data-view="electricity"] .room-grid .room-card > div:nth-child(3) {
+    align-items: flex-end !important;
+    gap: 8px !important;
+    margin-top: 12px !important;
+    padding-top: 12px !important;
+  }
+
+  .content-wrap[data-view="electricity"] .room-grid .room-card > div:nth-child(3) > div {
+    min-width: 0;
+  }
+
+  .content-wrap[data-view="electricity"] .room-grid .room-card > div:nth-child(3) strong {
+    font-size: clamp(20px, 5.5vw, 24px) !important;
+    overflow-wrap: anywhere;
+  }
+
+  .content-wrap[data-view="electricity"] .room-grid .room-card > div:nth-child(3) > span {
+    flex: 0 0 auto;
+    padding: 7px 9px !important;
+    white-space: nowrap;
+  }
+
+  .content-wrap[data-view="expenses"] .payments-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .content-wrap[data-view="expenses"] .payments-metrics > .metric-card {
+    min-width: 0;
+    min-height: 100px;
+    padding: 12px;
+  }
+
+  .content-wrap[data-view="expenses"] .payments-metrics > .metric-card span {
+    font-size: 10px;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+
+  .content-wrap[data-view="expenses"] .payments-metrics > .metric-card strong {
+    font-size: clamp(18px, 5vw, 23px);
+    overflow-wrap: anywhere;
+  }
+
+  .content-wrap[data-view="expenses"] .payments-metrics + .surface {
+    min-width: 0;
+    gap: 12px;
+    padding: 12px !important;
+  }
+
+  .content-wrap[data-view="expenses"] .payments-metrics + .surface > div {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  .content-wrap[data-view="expenses"] .expense-building-grid {
+    width: 100%;
+    min-width: 0;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px !important;
+    margin-bottom: 0;
+    padding: 3px 2px 6px;
+  }
+
+  .content-wrap[data-view="expenses"] .expense-building-grid .building-card {
+    min-width: 0 !important;
+    min-height: 40px;
+    padding: 7px 5px !important;
+    font-size: 11px;
+    text-align: center;
+  }
+
+  .content-wrap[data-view="expenses"] .payments-metrics + .surface > .btn-primary {
+    width: 100%;
+  }
+
+  .content-wrap[data-view="expenses"] .payments-ledger {
+    min-width: 0;
+    padding: 12px;
+  }
+
+  .content-wrap[data-view="expenses"] .payment-row {
+    min-width: 0;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .content-wrap[data-view="expenses"] .payment-room-details {
+    min-width: 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 10px;
+  }
+
+  .content-wrap[data-view="expenses"] .payment-room-details > div {
+    min-width: 0;
+  }
+
+  .content-wrap[data-view="expenses"] .payment-room-details strong {
+    overflow-wrap: anywhere;
+  }
+
+  .content-wrap[data-view="expenses"] .payment-room-number {
+    font-size: 23px !important;
+  }
+
+  .content-wrap[data-view="expenses"] .payment-room-details .payment-resident {
+    grid-column: 1 / -1;
+  }
+
+  .content-wrap[data-view="expenses"] .payment-financials {
+    min-width: 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    padding-top: 10px;
+  }
+
+  .content-wrap[data-view="expenses"] .payment-financials > div {
+    min-width: 0;
+  }
+
+  .content-wrap[data-view="expenses"] .payment-financials > div:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .content-wrap[data-view="expenses"] .payment-financials span {
+    font-size: 9px;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+
+  .content-wrap[data-view="expenses"] .payment-financials strong {
+    font-size: 15px;
+    overflow-wrap: anywhere;
+  }
+
+  .content-wrap[data-view="analytics"] .analytics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin: 14px 0 20px;
+  }
+
+  .content-wrap[data-view="analytics"] .analytics-card {
+    min-width: 0;
+    padding: 12px;
+  }
+
+  .content-wrap[data-view="analytics"] .analytics-card span {
+    font-size: 10px;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+
+  .content-wrap[data-view="analytics"] .analytics-card strong {
+    margin-top: 6px;
+    font-size: clamp(18px, 5vw, 23px);
+    overflow-wrap: anywhere;
+  }
+
+  .content-wrap[data-view="analytics"] .analytics-grid > :last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+    justify-self: center;
+    width: min(100%, calc(50% - 5px));
+  }
+
+  .content-wrap[data-view="analytics"] .dashboard-grid {
+    min-width: 0;
+    gap: 12px;
+  }
+
+  .content-wrap[data-view="analytics"] .dashboard-grid > .surface {
+    min-width: 0;
+    padding: 14px;
+  }
+
+  .content-wrap[data-view="analytics"] .dashboard-grid .metrics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .content-wrap[data-view="analytics"] .dashboard-grid .metric-card {
+    min-width: 0;
+    padding: 10px;
+  }
+
+  .content-wrap[data-view="analytics"] .dashboard-grid .metric-card strong {
+    font-size: clamp(18px, 5vw, 22px);
+    overflow-wrap: anywhere;
+  }
+
+  .content-wrap[data-view="analytics"] .section-head {
+    min-width: 0;
+    gap: 8px;
+  }
+
+  .content-wrap[data-view="analytics"] .section-head h2 {
+    font-size: 20px;
+  }
+
+  .content-wrap[data-view="analytics"] .section-head > span {
+    max-width: 45%;
+    font-size: 10px;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+
+  .content-wrap[data-view="analytics"] .section-head + .surface {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px !important;
+    padding: 12px !important;
+  }
+
+  .content-wrap[data-view="analytics"] .section-head + .surface > div {
+    min-width: 0;
+  }
+
+  .content-wrap[data-view="analytics"] .section-head + .surface input {
+    width: 100% !important;
+    min-width: 0;
+  }
+
+  .content-wrap[data-view="analytics"] .section-head + .surface > button {
+    width: 100%;
+  }
+
+  .content-wrap[data-view="analytics"] .report-section {
+    min-width: 0;
+    padding: 12px;
+    overflow-wrap: anywhere;
+  }
+
+  .content-wrap[data-view="analytics"] .report-section .stat-row {
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .content-wrap[data-view="analytics"] .report-section .stat-row-label {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .content-wrap[data-view="analytics"] .report-section .stat-row-value {
+    min-width: 0;
+    max-width: 48%;
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+
+  .content-wrap[data-view="analytics"] .report-section .payment-row {
+    min-width: 0;
+    padding: 10px;
+  }
+
+  .content-wrap[data-view="analytics"] .report-section .payment-financials {
+    min-width: 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+/* --- Phones 390px and below: stack dashboard snapshot figures so they stay
+   readable on small thumbs. Tablet (768px) keeps the desktop geometry. --- */
+@media (max-width: 390px) {
+  .mini-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .room-grid .room-card {
+    padding: 12px;
+  }
+
+  .room-grid .stat-row-value {
+    min-width: 8ch;
+  }
+}
 }

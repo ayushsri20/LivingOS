@@ -5,8 +5,16 @@ import sys
 
 
 def main():
-    """Run administrative tasks."""
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'hotel_project.settings')
+    """Run administrative tasks.
+
+    Tests always run against the isolated test environment so that any
+    destructive test-data helper refuses rather than touching the working
+    database. All other commands keep the legacy defaults.
+    """
+    if 'test' in sys.argv:
+        os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'hotel_project.settings_test')
+    else:
+        os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'hotel_project.settings')
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:

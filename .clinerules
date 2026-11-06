@@ -1,0 +1,18 @@
+# PANESAR LIVING — Project rules for agent work
+
+1. Preserve every pre-existing tracked and untracked change.
+2. Never use `git reset`, `git clean`, destructive `git checkout`/`git revert`, or broad file overwrites.
+3. Do not install dependencies, commit, push, or deploy without explicit authorization.
+4. Default to frontend-only work for UI tasks.
+5. Do not change backend, API, authentication, database, schema, migrations, or business logic without explicit authorization.
+6. Preserve the six buildings (M1, 1, 2, 3, 4, 5) and six rooms per building. Never change existing room/building IDs or assignments.
+7. Preserve rent, payment, electricity, and collection behavior.
+8. Audit first, implement second: never edit files during a read-only audit; wait for explicit approval before making changes.
+9. For broad frontend tasks: inspect shared components once, group related presentation improvements into one coordinated pass, and validate the combined changes once.
+10. Prefer the smallest coherent patch; review the diff; validate actual behavior.
+11. Never claim a build, test, or browser check passed unless it actually ran.
+12. If a task risks violating a protected boundary, stop and explain before proceeding.
+
+Entry points: `frontend/src/App.jsx`, `frontend/src/components/shared.jsx`
+Styling: `frontend/src/components.css`, `frontend/src/App.css`
+Frontend scripts (run from `frontend/`): `npm run build`, `npm run lint`, `npm run test:contract`

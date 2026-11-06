@@ -219,7 +219,7 @@ export default function AssignResidentModal({ room, occupancy, onClose, onRefres
       {people === 0 ? (
         <div>
           <h3 style={{ margin: '0 0 6px', fontFamily: 'var(--font-display)', fontSize: 20 }}>How many people will occupy this room?</h3>
-          <p style={{ margin: '0 0 16px', fontSize: 13, color: '#5c564c' }}>
+          <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--secondary-text)' }}>
             Capacity 2. This room cannot be changed.
           </p>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -233,7 +233,7 @@ export default function AssignResidentModal({ room, occupancy, onClose, onRefres
       ) : (
         <form onSubmit={handleSubmit} aria-busy={submitting}>
           {startsWithForm && (
-            <p style={{ margin: '0 0 14px', fontSize: 13, color: '#5c564c' }}>
+            <p style={{ margin: '0 0 14px', fontSize: 13, color: 'var(--secondary-text)' }}>
               This room already has 1 resident. This form adds <strong>Resident 2 only</strong> — the existing
               resident is never modified.
             </p>
@@ -273,7 +273,7 @@ export default function AssignResidentModal({ room, occupancy, onClose, onRefres
                 <input type="date" className="field-input" value={checkOut} disabled={submitting} onChange={(event) => setCheckOut(event.target.value)} />
               </FieldGroup>
             </div>
-            <p style={{ margin: '12px 0 0', fontSize: 12, color: '#5c564c' }}>
+            <p style={{ margin: '12px 0 0', fontSize: 12, color: 'var(--secondary-text)' }}>
               Rent, electricity and payment history are held once per room and shared by both residents.
             </p>
           </fieldset>

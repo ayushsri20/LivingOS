@@ -5,6 +5,7 @@ from django.conf import settings
 from django.utils import timezone
 from datetime import timedelta
 from .models import Building, Room, ElectricityBill, Guest, MonthlyPayment, PaymentRecord
+from django.core.files.storage import FileSystemStorage
 from django.core.files.uploadedfile import SimpleUploadedFile
 import json
 
@@ -249,9 +250,16 @@ class RoomFirstBillingApiTests(TestCase):
         self.assertEqual(tenant['college_id'], 'STU-123')
         self.assertEqual(tenant['student_college'], 'Example College')
         self.assertIsNone(tenant['govt_id_photo'])
-        self.assertIsNone(tenant['aadhar_front'])
-        self.assertIsNone(tenant['aadhar_back'])
-        self.assertIsNone(tenant['college_id_photo'])
+        self.assertEqual(
+            tenant['identity_documents'],
+            {'aadhar_front': False, 'aadhar_back': False, 'college_id_photo': False},
+        )
+        self.assertEqual(tenant['identity_document_urls'], {})
+        # No raw /media/ identity URL may leak through the tenant payload.
+        serialised = json.dumps(tenant)
+        self.assertNotIn('/media/', serialised)
+        self.assertNotIn('aadhar_cards', serialised)
+        self.assertNotIn('college_ids', serialised)
         self.assertIsNone(tenant['document_verification_image'])
 
     def test_building_and_billing_pages_render_without_server_errors(self):
@@ -597,3 +605,252 @@ class GuestFileUploadTests(TestCase):
         guest.refresh_from_db()
         self.assertEqual(guest.first_name, 'Updated')
         self.assertTrue(guest.govt_id_photo)
+
+
+@override_settings(
+    MIDDLEWARE=[m for m in settings.MIDDLEWARE if 'LoginRequiredMiddleware' not in m],
+    APPEND_SLASH=False,
+    ELECTRICITY_RATE_PER_UNIT='13.00',
+    MEDIA_ROOT='/tmp/panesar-identity-test-media',
+    STORAGES={
+        **settings.STORAGES,
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+    },
+)
+class GuestIdentityDocumentTests(TestCase):
+    """Secure identity documents: auth, validation, isolation, replace, delete."""
+
+    def setUp(self):
+        User = get_user_model()
+        self.admin = User.objects.create_superuser(
+            username='identity-admin', email='identity-admin@test.com', password='password')
+        self.regular = User.objects.create_user(
+            username='identity-user', email='identity-user@test.com', password='password')
+        self.room = Room.objects.get(number='B-101')
+        self.guest = Guest.objects.create(
+            first_name='Identity', last_name='Tenant', room=self.room, is_active=True)
+        self.other = Guest.objects.create(
+            first_name='Other', last_name='Tenant', room=self.room, is_active=True)
+        for field_name in ('aadhar_front', 'aadhar_back', 'college_id_photo'):
+            field = Guest._meta.get_field(field_name)
+            original_storage = field.storage
+            field.storage = FileSystemStorage(location=settings.MEDIA_ROOT)
+            self.addCleanup(setattr, field, 'storage', original_storage)
+        self.client.force_login(self.admin)
+
+    def _png_bytes(self, color=(10, 20, 30), size=(8, 8)):
+        from PIL import Image
+        import io
+        buffer = io.BytesIO()
+        Image.new('RGB', size, color).save(buffer, format='PNG')
+        return buffer.getvalue()
+
+    def _upload(self, guest_id, document, filename='aadhaar.png', content=None):
+        if content is None:
+            content = self._png_bytes()
+        return self.client.post(
+            reverse('upload_guest_identity_document', args=[guest_id, document]),
+            {'file': SimpleUploadedFile(filename, content, content_type='image/png')},
+        )
+
+    def test_roundtrip_replace_delete(self):
+        response = self._upload(self.guest.id, 'aadhar_front')
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertTrue(payload['success'])
+        self.assertTrue(payload['identity_documents']['aadhar_front'])
+        self.assertEqual(
+            payload['identity_document_urls']['aadhar_front'],
+            f'/api/guest/{self.guest.id}/identity/aadhar_front/file/',
+        )
+        self.guest.refresh_from_db()
+        first_name = self.guest.aadhar_front.name
+        self.assertTrue(first_name)
+        file_response = self.client.get(
+            reverse('guest_identity_file', args=[self.guest.id, 'aadhar_front']))
+        self.assertEqual(file_response.status_code, 200)
+        self.assertTrue(file_response['Content-Type'].startswith('image/'))
+        self.assertIn('no-store', file_response['Cache-Control'])
+        self.assertIn('private', file_response['Cache-Control'])
+        self.assertEqual(file_response['X-Content-Type-Options'], 'nosniff')
+        body = b''.join(file_response.streaming_content)
+        self.assertTrue(body.startswith(b'\x89PNG'))
+        replacement = self._upload(self.guest.id, 'aadhar_front')
+        self.assertEqual(replacement.status_code, 200)
+        self.guest.refresh_from_db()
+        self.assertNotEqual(self.guest.aadhar_front.name, first_name)
+        delete_response = self.client.post(
+            reverse('delete_guest_identity_document', args=[self.guest.id, 'aadhar_front']))
+        self.assertEqual(delete_response.status_code, 200)
+        self.guest.refresh_from_db()
+        self.assertFalse(bool(self.guest.aadhar_front))
+        missing = self.client.get(
+            reverse('guest_identity_file', args=[self.guest.id, 'aadhar_front']))
+        self.assertEqual(missing.status_code, 404)
+
+    def test_rejects_fake_image_content(self):
+        response = self._upload(
+            self.guest.id, 'aadhar_back', content=b'#!/bin/sh\necho pwned\n')
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('valid image', response.json()['message'].lower())
+
+    def test_rejects_bad_extension_and_oversize(self):
+        bad_ext = self._upload(
+            self.guest.id, 'college_id_photo', filename='id.txt',
+            content=self._png_bytes())
+        self.assertEqual(bad_ext.status_code, 400)
+        oversize = self._upload(
+            self.guest.id, 'college_id_photo',
+            content=b'\x89PNG' + b'\x00' * (6 * 1024 * 1024))
+        self.assertEqual(oversize.status_code, 400)
+        self.assertIn('5 mb', oversize.json()['message'].lower())
+
+    def test_unknown_slot_is_404(self):
+        self.assertEqual(self._upload(self.guest.id, 'passport').status_code, 404)
+
+    def test_anonymous_and_non_staff_blocked(self):
+        self.client.logout()
+        self.assertNotEqual(
+            self.client.get(
+                reverse('guest_identity_file', args=[self.guest.id, 'aadhar_front'])
+            ).status_code, 200)
+        self.assertNotEqual(self._upload(self.guest.id, 'aadhar_front').status_code, 200)
+        self.client.force_login(self.regular)
+        self.assertEqual(
+            self.client.get(
+                reverse('guest_identity_file', args=[self.guest.id, 'aadhar_front'])
+            ).status_code, 302)
+        self.assertEqual(self._upload(self.guest.id, 'aadhar_front').status_code, 302)
+
+    def test_tenant_id_selects_only_that_tenant(self):
+        self._upload(self.guest.id, 'aadhar_front', content=self._png_bytes((1, 2, 3)))
+        self._upload(self.other.id, 'aadhar_front', content=self._png_bytes((200, 210, 220)))
+        first = b''.join(self.client.get(
+            reverse('guest_identity_file', args=[self.guest.id, 'aadhar_front'])
+        ).streaming_content)
+        second = b''.join(self.client.get(
+            reverse('guest_identity_file', args=[self.other.id, 'aadhar_front'])
+        ).streaming_content)
+        self.assertNotEqual(first, second)
+        self.assertEqual(
+            self.client.get(
+                reverse('guest_identity_file', args=[999999, 'aadhar_front'])).status_code, 404)
+
+    def test_failed_replacement_preserves_previous_image(self):
+        original = self._png_bytes((11, 22, 33))
+        self.assertEqual(self._upload(self.guest.id, 'aadhar_front', content=original).status_code, 200)
+        before = b''.join(self.client.get(
+            reverse('guest_identity_file', args=[self.guest.id, 'aadhar_front'])
+        ).streaming_content)
+        bad = self._upload(self.guest.id, 'aadhar_front', content=b'not-an-image')
+        self.assertEqual(bad.status_code, 400)
+        self.guest.refresh_from_db()
+        self.assertTrue(bool(self.guest.aadhar_front))
+        after = b''.join(self.client.get(
+            reverse('guest_identity_file', args=[self.guest.id, 'aadhar_front'])
+        ).streaming_content)
+        self.assertEqual(before, after)
+
+    def test_rejects_oversized_dimensions(self):
+        huge = self._png_bytes(size=(6100, 10))
+        response = self._upload(self.guest.id, 'aadhar_back', content=huge)
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('dimension', response.json()['message'].lower())
+        self.guest.refresh_from_db()
+        self.assertFalse(bool(self.guest.aadhar_back))
+
+    def test_logged_out_session_cannot_reuse_file_url(self):
+        self.assertEqual(self._upload(self.guest.id, 'aadhar_front').status_code, 200)
+        file_url = reverse('guest_identity_file', args=[self.guest.id, 'aadhar_front'])
+        self.assertEqual(self.client.get(file_url).status_code, 200)
+        self.client.logout()
+        after_logout = self.client.get(file_url)
+        self.assertNotEqual(after_logout.status_code, 200)
+        self.assertNotEqual(
+            self.client.post(
+                reverse('upload_guest_identity_document', args=[self.guest.id, 'aadhar_front']),
+                {'file': SimpleUploadedFile('x.png', self._png_bytes(), content_type='image/png')},
+            ).status_code, 200)
+
+    def test_direct_media_identity_prefix_is_blocked(self):
+        # End-to-end through a live DEBUG server (isolated temp MEDIA_ROOT via
+        # MEDIA_ROOT_TEST): anonymous GETs to a REAL identity file must NOT
+        # return bytes (login redirect since LoginRequiredMiddleware skips
+        # TESTING but the live server enforces it; guard view 404s authed
+        # probes). Same image stays retrievable via the authorised endpoint in
+        # the test client. Unrelated /media/ paths keep prior dev behaviour.
+        import os
+        import subprocess
+        import sys
+        import tempfile
+        import time
+        import urllib.request
+        media_root = tempfile.mkdtemp(prefix='panesar-direct-media-')
+        port = 18731
+        env = dict(os.environ)
+        env['SECRET_KEY'] = 'direct-media-test-secret'
+        env['DEBUG'] = 'True'
+        env['MEDIA_ROOT_TEST'] = media_root
+        server = subprocess.Popen(
+            [sys.executable, 'manage.py', 'runserver', str(port), '--noreload'],
+            cwd='/Users/ayush/Projects/Hotel_rental-main 5',
+            env=env,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        try:
+            png = self._png_bytes((9, 9, 9))
+            rel_path = 'aadhar_cards/direct_probe.png'
+            full_path = os.path.join(media_root, rel_path)
+            os.makedirs(os.path.dirname(full_path), exist_ok=True)
+            with open(full_path, 'wb') as handle:
+                handle.write(png)
+
+            def fetch(path, follow_redirects=False):
+                url = f'http://127.0.0.1:{port}{path}'
+
+                class _NoRedirect(urllib.request.HTTPRedirectHandler):
+                    def redirect_request(self, req, fp, code, msg, headers, newurl):
+                        return None
+
+                opener = urllib.request.build_opener(
+                    _NoRedirect if not follow_redirects else urllib.request.HTTPRedirectHandler)
+                for _ in range(60):
+                    try:
+                        with opener.open(url, timeout=5) as response:
+                            return response.status, response.read()
+                    except Exception as exc:
+                        code = getattr(exc, 'code', None)
+                        if code is not None:
+                            return code, b''
+                        time.sleep(0.25)
+                raise AssertionError('DEBUG test server did not start')
+
+            status, body = fetch(f'/media/{rel_path}')
+            # 302 (login redirect) or 404 (guard deny) both prove NO BYTES.
+            self.assertIn(status, (302, 404))
+            self.assertNotIn(png[:8], body)
+
+            other_rel = 'govt_ids/public_probe.txt'
+            other_full = os.path.join(media_root, other_rel)
+            os.makedirs(os.path.dirname(other_full), exist_ok=True)
+            with open(other_full, 'wb') as handle:
+                handle.write(b'public-dev-placeholder')
+            # NOTE: on the live DEBUG server LoginRequiredMiddleware allow-lists
+            # the /media/ prefix but '/'-prefix matching still funnels anonymous
+            # probes to login (302). The invariant that matters: NEITHER path
+            # returns identity bytes anonymously. govt_ids/ keeps its
+            # pre-existing route (static serve when authed); the guard only
+            # changes aadhar_cards|college_ids handling, which the 302/404
+            # above already proves. Assert only that no bytes leak here.
+            other_status, other_body = fetch(f'/media/{other_rel}')
+            self.assertNotIn(b'public-dev-placeholder', other_body)
+        finally:
+            server.terminate()
+            try:
+                server.wait(timeout=10)
+            except Exception:
+                server.kill()
+

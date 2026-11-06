@@ -15,7 +15,7 @@ const PAYMENT_METHODS = [
 function Detail({ label, value }) {
   return (
     <div>
-      <span className="eyebrow" style={{ display: 'block', color: '#5c564c', fontSize: 10 }}>{label}</span>
+      <span className="eyebrow" style={{ display: 'block', color: 'var(--secondary-text)', fontSize: 10 }}>{label}</span>
       <strong style={{ fontFamily: 'var(--font-display)', fontSize: 16 }}>{value}</strong>
     </div>
   )
@@ -279,7 +279,7 @@ export default function RoomDrawer({ room, onClose, onRefresh, onToast, onPaymen
             >
               ← Back
             </button>
-            <span className="eyebrow" style={{ color: '#5c564c' }}>RESIDENT SUB-VIEW</span>
+            <span className="eyebrow" style={{ color: 'var(--secondary-text)' }}>RESIDENT SUB-VIEW</span>
           </div>
         ) : null}
 
@@ -328,7 +328,7 @@ export default function RoomDrawer({ room, onClose, onRefresh, onToast, onPaymen
                     <div className="surface resident-profile-card">
                       <div className="resident-profile-heading">
                         <div>
-                          <span className="eyebrow" style={{ color: '#5c564c' }}>
+                          <span className="eyebrow" style={{ color: 'var(--secondary-text)' }}>
                             {guests.length > 1 ? `Resident ${index + 1} of ${guests.length}` : 'Primary resident'}
                           </span>
                           <h3>{resident.full_name}</h3>
@@ -385,7 +385,7 @@ export default function RoomDrawer({ room, onClose, onRefresh, onToast, onPaymen
               <div className="surface" style={{ marginBottom: 20 }}>
                 <div className="resident-profile-heading">
                   <div>
-                    <span className="eyebrow" style={{ color: '#5c564c' }}>Primary Resident</span>
+                    <span className="eyebrow" style={{ color: 'var(--secondary-text)' }}>Primary Resident</span>
                     <h3>{residentName}</h3>
                   </div>
                   <span className={`status-tag ${statusColors[status] || 'pending'}`}>{status}</span>
@@ -527,7 +527,7 @@ export default function RoomDrawer({ room, onClose, onRefresh, onToast, onPaymen
                   >
                     {collectLoading ? 'Recording…' : 'Collect Payment'}
                   </button>
-                  <p style={{ margin: '10px 0 0', fontSize: 12, color: '#5c564c' }}>
+                  <p style={{ margin: '10px 0 0', fontSize: 12, color: 'var(--secondary-text)' }}>
                     Collected, outstanding and payment status are returned by the backend — this screen
                     never calculates them itself.
                   </p>

@@ -1,373 +1,355 @@
 /* ============================================================
-   Panesar Living header — architectural construction.
-   React owns ONLY the lifecycle: full | short | settled.
-   All drawing, sliding, settling, reveal and gold finishing is
-   CSS/SVG here (viewBox 0 0 1800 360 = the approved artwork
-   ratio; `slice` maps the SVG exactly like object-fit: cover,
-   so one coordinate system serves every viewport).
-   Timeline on fresh entry (full ≈ 2.1s, then fully static):
-     0.00-0.45  paper canvas unrolls (blueprint atmosphere)
-     0.10-0.60  faint drafting rules draw
-     0.15-0.75  left + right structures draw toward the centre
-     0.26-1.30  pencil P sketches (stem, bowl, house, frame)
-     0.42-0.98  windows / rails / structural details develop
-     0.75-1.65  approved artwork resolves (left-to-right)
-     0.84-2.10  banner slides and physically settles into frame
-     1.12-1.56  gold finishing (frame + descriptor rules)
-     1.52-2.08  gold corner brackets + accent line complete
-     2.10+      static — identical to plh-final.webp
-   Section change (short): one quiet 650ms carve/settle only.
+   Panesar Living baseline header — graphite layer, gold P,
+   sequential PANESAR → LIVING reveal, one liquid-gloss sweep.
+   React owns ONLY the full lifecycle; CSS draws.
+   Base rules are the settled end-state; animations run "from"
+   hidden with fill-mode both, so reduced-motion stays visible.
+   Sequence (full ≈ 1.8s, then static):
+     0.00-0.45  gold P draws + settles
+     0.15-1.20  PANESAR letters reveal one by one
+     0.75-1.55  LIVING letters continue the same sequence
+     0.90-1.70  single gloss sweep across the lockup
+     1.80+      static — full logo visible
+   Section change (short): one quiet 650ms shimmer only.
    ============================================================ */
 
-/* The topbar becomes a column: banner on top, brand + nav row below.
-   The brand/nav markup, labels and routes are untouched — they are only
-   wrapped so they keep their original side-by-side layout. */
+/* The graphite header is an intentional layer of the dark app —
+   not a floating card: no hard offset shadow, hairline edge only.
+   Cool midnight remix: graphite follows the #080C16 canvas. */
+/* The topbar becomes a column: brand lockup on top, nav row below.
+   Nav markup, labels and routes are untouched. */
 .topbar.panesar-topbar {
   flex-direction: column;
   align-items: stretch;
   justify-content: flex-start;
-  gap: 6px;
+  gap: 8px;
+  background:
+    radial-gradient(120% 55% at 50% 0%, rgba(240, 213, 155, 0.09), transparent 60%),
+    linear-gradient(180deg, var(--graphite) 0%, var(--panesar-black) 100%);
+  border-bottom: 1px solid var(--cool-border);
 }
 
 .panesar-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 18px;
+  gap: 12px;
   min-width: 0;
 }
 
-/* --- Banner: architectural paper frame + canvas holding the artwork --- */
-.plh {
-  --plh-navy: #0f172a;
-  --plh-gold: #c9a86a;
-  --plh-paper: #f5f0e8;
-  --plh-ink: #111;
-
+/* --- Brand lockup: fixed reservation, no layout shift ------------------
+   Width/height are reserved up front: the monogram tile (52px) and the
+   wordmark line-height never change during the reveal. */
+.plb {
   position: relative;
-  flex-shrink: 0;
   width: 100%;
-  height: clamp(225px, 23vw, 360px);
   overflow: hidden;
-  border: 3px solid var(--plh-ink);
-  box-shadow: 10px 10px 0 var(--plh-navy);
-  /* Paper + blueprint grid + static warm ambient, in one background. */
-  background:
-    radial-gradient(circle at 50% 50%, rgba(201, 168, 106, 0.25), transparent 29%),
-    linear-gradient(rgba(15, 23, 42, 0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(15, 23, 42, 0.045) 1px, transparent 1px),
-    var(--plh-paper);
-  background-size: auto, 42px 42px, 42px 42px, auto;
+  isolation: isolate;
+  border-bottom: 1px solid rgba(212, 173, 102, 0.22);
 }
 
-.plh-canvas {
-  position: absolute;
-  inset: 14px;
-  overflow: hidden;
-  border: 2px solid var(--plh-ink);
-  background: #eee5d5;
-  box-shadow: 7px 7px 0 rgba(15, 23, 42, 0.1);
+.plb-lockup {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 76px;
+  padding: 12px 4px;
+  min-width: 0;
 }
 
-/* Gold corner brackets sit above the artwork. */
-.plh-corners span {
-  position: absolute;
-  z-index: 90;
-  width: 20px;
-  height: 20px;
-  border-color: var(--plh-gold);
-}
-.plh-corners .a { left: 9px; top: 9px; border-left: 2px solid; border-top: 2px solid; --cx: -6px; --cy: -6px; }
-.plh-corners .b { right: 9px; top: 9px; border-right: 2px solid; border-top: 2px solid; --cx: 6px; --cy: -6px; }
-.plh-corners .c { left: 9px; bottom: 9px; border-left: 2px solid; border-bottom: 2px solid; --cx: -6px; --cy: 6px; }
-.plh-corners .d { right: 9px; bottom: 9px; border-right: 2px solid; border-bottom: 2px solid; --cx: 6px; --cy: 6px; }
-
-/* Single stage: artwork + construction layer move together and settle.
-   Settled / short base state is the identity transform. */
-.plh-stage {
-  position: absolute;
-  inset: 0;
-  will-change: transform;
+.plb-mark {
+  flex: 0 0 52px;
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(212, 173, 102, 0.55);
+  background: rgba(9, 13, 20, 0.55);
 }
 
-/* Approved artwork: fully visible at rest; desktop cover preserved. */
-.plh-art {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.plb-mark svg {
+  width: 40px;
+  height: 40px;
   display: block;
 }
 
-/* --- Temporary construction layer -------------------------------------
-   Invisible by default (settled, short and reduced-motion all show just
-   the artwork). During `full` it holds every stroke: drafting rules, both
-   skylines, the pencil P and the gold finish. Coordinates are artwork
-   coordinates, so strokes land on the artwork they echo. */
-.plh-sketch {
+.plb-mark-stroke {
+  fill: none;
+  stroke: var(--brand-gold);
+  stroke-width: 5;
+}
+
+.plb-mark-inner {
+  fill: none;
+  stroke: var(--brand-gold-bright);
+  stroke-width: 2.4;
+}
+
+.plb-wordmark {
+  display: inline-flex;
+  align-items: baseline;
+  min-width: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  font-size: clamp(1.05rem, 2.4vw, 1.6rem);
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.plb-word {
+  display: inline-flex;
+}
+
+.plb-word--panesar {
+  color: var(--warm-white);
+}
+
+.plb-word--living {
+  color: var(--electric-blue);
+}
+
+.plb-letter {
+  display: inline-block;
+}
+
+.plb-gap {
+  width: 0.55em;
+  flex: 0 0 0.55em;
+}
+
+/* Screen-reader name; the animated letters are decorative. */
+.plb-sr {
   position: absolute;
-  z-index: 30;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* --- Liquid gloss: one restrained diagonal sweep -----------------------
+   Base state is parked off-canvas and transparent. */
+.plb-gloss {
+  position: absolute;
+  z-index: 2;
+  top: -30%;
+  bottom: -30%;
+  left: 0;
+  width: 34%;
+  transform: translateX(-140%) skewX(-14deg);
   opacity: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(247, 245, 239, 0.10) 38%,
+    rgba(240, 213, 155, 0.20) 50%,
+    rgba(247, 245, 239, 0.10) 62%,
+    transparent 100%
+  );
   pointer-events: none;
 }
-.plh-sketch .sk path {
-  fill: none;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-dasharray: 1;
-  stroke-dashoffset: 0;
-}
-.sk-rules path { stroke: rgba(15, 23, 42, 0.3); stroke-width: 1.4; }
-.sk-build path { stroke: rgba(28, 56, 92, 0.62); stroke-width: 1.8; }
-.sk-p path     { stroke: rgba(38, 40, 48, 0.85); stroke-width: 2.4; }
-.sk-p .p-frame { stroke: rgba(38, 40, 48, 0.55); stroke-width: 1.4; }
-.sk-p .p-ghost { stroke-width: 1.1; opacity: 0.4; }
-.sk-gold path  { stroke: var(--plh-gold); stroke-width: 2; }
 
-/* --- Keyframes ------------------------------------------------------- */
-@keyframes plhUnroll {
-  from { clip-path: inset(0 0 100% 0); }
-  to   { clip-path: inset(0 0 0 0); }
+/* --- Gold liquid fill: rises and settles inside the P -----------------------
+   Clipping geometry = outer P path minus inner counter (fill-rule evenodd),
+   so the counter stays transparent and the fill can never spill outside the
+   emblem. Base state is settled and visible; the entrance keyframe drives
+   the subtle rise. ---------------------------------------------------------- */
+.plb-liquid {
+  opacity: 1;
+  transform: none;
 }
-@keyframes plhDraw {
+
+.plb[data-mode="full"] .plb-liquid {
+  animation: plbLiquidRise 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes plbLiquidRise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* --- Keyframes -------------------------------------------------------
+   Letters rise from hidden with fill-mode both; settled base = visible. */
+@keyframes plbLetterIn {
+  from { opacity: 0; transform: translateY(0.25em); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes plbMarkIn {
+  from { opacity: 0; transform: translateY(-8px) scale(0.94); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes plbStrokeDraw {
   from { stroke-dashoffset: 1; }
   to   { stroke-dashoffset: 0; }
 }
-@keyframes plhSketchFade {
-  0%   { opacity: 1; }
-  74%  { opacity: 1; }
-  100% { opacity: 0; }
+@keyframes plbGoldShimmer {
+  0%   { filter: brightness(1); }
+  45%  { filter: brightness(1.28); }
+  100% { filter: brightness(1); }
 }
-/* Artwork resolves left-to-right: P first, then PANESAR, LIVING and the
-   descriptor, with a small vertical settlement as it lands. */
-@keyframes plhArtResolve {
-  0% {
-    opacity: 0;
-    clip-path: inset(0 100% 0 0);
-    transform: translateY(-1.5%);
-    filter: blur(3px) saturate(0.55);
-  }
-  35% { opacity: 1; }
-  100% {
-    opacity: 1;
-    clip-path: inset(0 0 0 0);
-    transform: translateY(0);
-    filter: blur(0) saturate(1);
-  }
+@keyframes plbGlossSweep {
+  0%   { opacity: 0; transform: translateX(-140%) skewX(-14deg); }
+  12%  { opacity: 1; }
+  75%  { opacity: 1; }
+  100% { opacity: 0; transform: translateX(420%) skewX(-14deg); }
 }
-/* Slide + physical settle: hold slightly offset while the structure
-   draws, glide into place as the artwork resolves, overshoot a hair,
-   then settle exactly on the final position. The scale keeps the stage
-   covering the canvas at every step, so no bare edges ever show.
-   Magnitude stays inside the brief: ≤1.5% translate. */
-@keyframes plhStageSettle {
-  0%   { transform: translate(-1.2%, -0.4%) scale(1.03); }
-  42%  { transform: translate(-1.2%, -0.4%) scale(1.03); }
-  64%  { transform: translate(0.5%, 0.1%) scale(1.012); }
-  84%  { transform: translate(-0.1%, -0.02%) scale(1.004); }
-  100% { transform: translate(0, 0) scale(1); }
-}
-@keyframes plhCornerIn {
-  from { opacity: 0; transform: translate(var(--cx), var(--cy)); }
-  to   { opacity: 1; transform: translate(0, 0); }
-}
-@keyframes plhAccent {
-  from { transform: scaleX(0); }
-  to   { transform: scaleX(1); }
-}
-
-/* Gold accent line along the bottom edge — settles at full width. */
-.plh-progress {
-  position: absolute;
-  z-index: 100;
-  left: 0;
-  bottom: 0;
-  height: 2px;
-  width: 100%;
-  background: var(--plh-gold);
-  box-shadow: 0 0 9px rgba(201, 168, 106, 0.5);
-  transform-origin: left center;
-}
-
-/* --- Section switch: the compact dual-carve sweep (short mode only).
-       Fresh entry uses the full construction sequence below.         --- */
-@keyframes plhCarve {
-  0% {
-    opacity: 0;
-    clip-path: polygon(
-      0 0, 0 100%, 0 100%, 0 100%, 0 100%,
-      100% 100%, 100% 100%, 100% 100%, 100% 0
-    );
-    filter: blur(2.8px) brightness(1.06);
-  }
-  18% {
-    opacity: 1;
-    clip-path: polygon(
-      0 0, 0 100%, 14% 100%, 29% 80%, 43% 61%,
-      57% 61%, 71% 80%, 86% 100%, 100% 100%, 100% 0
-    );
-    filter: blur(1.5px) brightness(1.035);
-  }
-  42% {
-    clip-path: polygon(
-      0 0, 0 100%, 31% 100%, 40% 82%, 47% 65%,
-      53% 65%, 60% 82%, 69% 100%, 100% 100%, 100% 0
-    );
-    filter: blur(0.65px) brightness(1.015);
-  }
-  68% {
-    clip-path: polygon(
-      0 0, 0 100%, 43% 100%, 47% 84%, 49.5% 69%,
-      50.5% 69%, 53% 84%, 57% 100%, 100% 100%, 100% 0
-    );
-    filter: blur(0.18px) brightness(1);
-  }
-  100% {
-    opacity: 1;
-    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
-    filter: blur(0) brightness(1);
-  }
-}
-@keyframes plhProgress {
-  from { width: 0; }
-  to   { width: 100%; }
+@keyframes plbSoftShimmer {
+  0%   { opacity: 0.35; }
+  45%  { opacity: 1; }
+  100% { opacity: 1; }
 }
 
 /* ============================================================
-   full — the architectural construction (≈2.1s, plays once on
-   fresh authenticated entry, then React flips to `settled` and
-   every rule below stops applying: base states = final look).
+   full — one continuous sequence (≈1.8s, plays once, then static).
+   P draws first; PANESAR follows letter by letter; LIVING
+   continues the same index chain; gloss sweeps once.
    ============================================================ */
-.plh[data-mode="full"] .plh-canvas { animation: plhUnroll 450ms cubic-bezier(0.33, 1, 0.68, 1) both; }
-.plh[data-mode="full"] .plh-stage { animation: plhStageSettle 2100ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-.plh[data-mode="full"] .plh-art { animation: plhArtResolve 900ms cubic-bezier(0.4, 0, 0.2, 1) 750ms both; }
-.plh[data-mode="full"] .plh-sketch { animation: plhSketchFade 1900ms linear 100ms both; }
-
-/* 0.10s — drafting rules: faint blueprint atmosphere */
-.plh[data-mode="full"] .sk-rules path { animation: plhDraw 500ms ease-out 100ms both; }
-
-/* 0.15s — both skylines draw together, from their outer edges inward */
-.plh[data-mode="full"] .sk-lp path,
-.plh[data-mode="full"] .sk-rp path { animation: plhDraw 600ms cubic-bezier(0.33, 1, 0.68, 1) 150ms both; }
-
-/* 0.42s — windows, rails, structural details develop */
-.plh[data-mode="full"] .sk-ld path,
-.plh[data-mode="full"] .sk-rd path { animation: plhDraw 560ms ease-out 420ms both; }
-
-/* 0.26s — pencil P: stem → bowl → house detail → ghost line → frame */
-.plh[data-mode="full"] .p-stem { animation: plhDraw 360ms ease-out 260ms both; }
-.plh[data-mode="full"] .p-bowl { animation: plhDraw 580ms cubic-bezier(0.33, 1, 0.68, 1) 400ms both; }
-.plh[data-mode="full"] .p-house { animation: plhDraw 400ms ease-out 640ms both; }
-.plh[data-mode="full"] .p-ghost { animation: plhDraw 450ms ease-out 700ms both; }
-.plh[data-mode="full"] .p-frame { animation: plhDraw 540ms ease-out 760ms both; }
-
-/* 1.12s — gold finish: frame turns gold, descriptor rules light up */
-.plh[data-mode="full"] .gold-frame { animation: plhDraw 380ms ease-out 1120ms both; }
-.plh[data-mode="full"] .gold-l,
-.plh[data-mode="full"] .gold-r { animation: plhDraw 360ms ease-out 1200ms both; }
-
-/* 1.52s — final chrome: corner brackets + accent line complete */
-.plh[data-mode="full"] .plh-corners .a { animation: plhCornerIn 380ms ease-out 1520ms both; }
-.plh[data-mode="full"] .plh-corners .b { animation: plhCornerIn 380ms ease-out 1580ms both; }
-.plh[data-mode="full"] .plh-corners .c { animation: plhCornerIn 380ms ease-out 1640ms both; }
-.plh[data-mode="full"] .plh-corners .d { animation: plhCornerIn 380ms ease-out 1700ms both; }
-.plh[data-mode="full"] .plh-progress { animation: plhAccent 420ms cubic-bezier(0.33, 1, 0.68, 1) 1500ms both; }
-
-/* --- short — section change: one quiet carve/settle (650ms).
-       No construction replay, no stage movement, no gold redraw.  --- */
-.plh[data-mode="short"] .plh-art {
-  animation: plhCarve 600ms cubic-bezier(0.16, 1, 0.3, 1) both;
+.plb[data-mode="full"] .plb-mark {
+  animation:
+    plbMarkIn 420ms cubic-bezier(0.22, 1, 0.36, 1) both,
+    plbGoldShimmer 900ms ease-in-out 500ms both;
 }
-.plh[data-mode="short"] .plh-progress {
-  animation: plhProgress 650ms linear both;
+.plb[data-mode="full"] .plb-mark-stroke,
+.plb[data-mode="full"] .plb-mark-inner {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  animation: plbStrokeDraw 480ms ease-out both;
+}
+.plb[data-mode="full"] .plb-mark-inner {
+  animation-delay: 140ms;
 }
 
-/* --- Responsive: smaller banner below 900px; contain keeps the whole
-       lockup visible (no clipped logo, no viewport maths). --- */
-@media (max-width: 900px) {
-  .topbar.panesar-topbar {
-    gap: 4px;
-    /* Bleed the artwork to the viewport edge so its outline lands exactly on
-       the content grid. Without this the 3px border sits inside the hero and
-       the two surfaces read as separate cards. Matches .content-wrap's own
-       padding at each breakpoint (see the <=600px override below). */
-    padding-inline: clamp(18px, 4vw, 48px);
+.plb[data-mode="full"] .plb-letter {
+  animation: plbLetterIn 400ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(150ms + var(--i) * 90ms);
+}
+.plb[data-mode="full"] .plb-gloss {
+  animation: plbGlossSweep 800ms cubic-bezier(0.33, 1, 0.68, 1) 900ms both;
+}
+
+
+/* --- Responsive: reserved logo dimensions hold at every width so the
+   lockup never shifts during the reveal. Wordmark scales with clamp().
+   Breakpoints: 1440, 1280, 1024, 768, 390, 360. --- */
+
+/* --- 1440px: large desktop — slight lockup compression. --- */
+@media (max-width: 1440px) {
+  .plb-lockup {
+    padding: 10px 4px;
+    gap: 12px;
   }
+  .plb-wordmark {
+    font-size: clamp(1rem, 2.2vw, 1.5rem);
+  }
+}
 
+/* --- 1280px: desktop — wordmark settles to mid scale. --- */
+@media (max-width: 1280px) {
+  .plb-wordmark {
+    font-size: clamp(0.95rem, 2vw, 1.4rem);
+  }
+}
+
+/* --- 1024px: tablet — lockup compresses, tile stays reserved. --- */
+@media (max-width: 1024px) {
+  .topbar.panesar-topbar {
+    gap: 7px;
+  }
+  .plb-lockup {
+    min-height: 70px;
+    padding: 10px 2px;
+    gap: 12px;
+  }
+  .plb-wordmark {
+    font-size: clamp(0.9rem, 2.6vw, 1.3rem);
+  }
+}
+
+/* --- 768px: tablet portrait — single column bar, compact lockup. --- */
+@media (max-width: 768px) {
   .panesar-bar {
     flex-direction: column;
     align-items: stretch;
     gap: 8px;
   }
-
-  .plh {
-    height: clamp(100px, 18vw, 160px);
-    box-shadow: 4px 4px 0 var(--plh-navy);
+  .plb-lockup {
+    min-height: 66px;
+    padding: 9px 2px;
   }
-
-  .plh-art {
-    object-fit: contain;
-  }
-
-  /* The artwork is contain-fit here, so the construction layer takes the
-     same 5:1 rect, centred — on a 5:1 box slice == meet, so strokes stay
-     registered with the artwork. One system, no per-viewport maths. */
-  .plh-sketch {
-    inset: auto;
-    left: 0;
-    top: 50%;
-    width: 100%;
-    height: auto;
-    aspect-ratio: 1800 / 360;
-    transform: translateY(-50%);
+  .plb-wordmark {
+    font-size: clamp(0.85rem, 3.2vw, 1.2rem);
   }
 }
 
-/* --- Phones: the hero stays a brand stage, not a banner. This block only ever
-   raises the approved header height below 480px; desktop and tablet keep the
-   rules above exactly. `contain` still shows the whole lockup, never cropped. */
-@media (max-width: 480px) {
-  .plh {
-    height: clamp(110px, 20vw, 160px);
+/* --- 390px: phone — smaller tile, tighter gap, same row. --- */
+@media (max-width: 390px) {
+  .plb-lockup {
+    gap: 10px;
+    min-height: 60px;
+    padding: 8px 0;
   }
 
-  /* Below 600px the content grid narrows to 14px, but App.css leaves the bar
-     at 15px. Follow the grid so the header outline and the hero share edges. */
-  .topbar.panesar-topbar {
-    padding-inline: 14px;
+  .plb-mark {
+    flex-basis: 44px;
+    width: 44px;
+    height: 44px;
   }
 
-  .plh-canvas {
-    inset: 8px;
+  .plb-mark svg {
+    width: 34px;
+    height: 34px;
   }
 
-  /* The tall phone hero is a brand stage: the whole 5:1 lockup must read.
-     Below 900px the approved base switches art + sketch to contain; the
-     canvas keeps a 5:1 box so both stay registered and uncropped. */
-  .plh-canvas {
-    aspect-ratio: 1800 / 360;
-    height: auto;
-    max-height: 100%;
-    margin: auto;
+  .plb-wordmark {
+    letter-spacing: 0.1em;
+    font-size: clamp(0.8rem, 4vw, 1.05rem);
+  }
+
+  .plb-gap {
+    width: 0.45em;
+    flex-basis: 0.45em;
   }
 }
 
-/* --- Dashboard phone banner: editorial title, scoped so no other page moves.
-   `data-view="dashboard"` is the only hook; desktop keeps the shared banner.
-   The dashboard banner is hidden on phones: the hero + snapshot carry the
-   page identity, so the gold banner would only duplicate it. */
-/* --- Reduced motion: show the final header immediately, fully static. --- */
+/* --- 360px: narrowest phone — one readable row, never clip. --- */
+@media (max-width: 360px) {
+  .plb-lockup {
+    min-height: 56px;
+    padding: 7px 0;
+  }
+  .plb-mark {
+    flex-basis: 40px;
+    width: 40px;
+    height: 40px;
+  }
+  .plb-mark svg {
+    width: 30px;
+    height: 30px;
+  }
+  .plb-wordmark {
+    letter-spacing: 0.08em;
+    font-size: clamp(0.72rem, 3.8vw, 0.95rem);
+  }
+}
+
+/* --- Reduced motion: show the final header immediately, fully static.
+   No animation + final opacity/transform = logo never hidden. --- */
 @media (prefers-reduced-motion: reduce) {
-  .plh,
-  .plh * {
+  .plb,
+  .plb * {
     animation: none !important;
   }
 
-  .plh-sketch {
+  .plb-gloss {
     display: none;
   }
 }

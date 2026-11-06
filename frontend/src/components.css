@@ -40,7 +40,7 @@
   display: grid;
   place-items: center;
   border: var(--line);
-  background: var(--yellow);
+  background: var(--white);
   box-shadow: 3px 3px 0 var(--ink);
   font-family: var(--font-display);
   font-size: 24px;
@@ -118,7 +118,8 @@
 
 .nav-link.active {
   transform: translate(-1px, -1px);
-  background: var(--yellow);
+  background: var(--blue);
+  color: #fff;
 }
 
 /* Pressing the current page still responds, but without the lift. */
@@ -140,7 +141,7 @@
 .page-banner {
   padding: clamp(16px, 2.5vw, 30px) clamp(18px, 4vw, 48px);
   border: 3px solid var(--ink);
-  background: var(--yellow);
+  background: var(--white);
   box-shadow: 8px 8px 0 var(--ink);
   margin-bottom: 28px;
   display: flex;
@@ -312,13 +313,13 @@
   min-height: 42px;
   padding: 10px 18px;
   border: var(--line);
-  background: var(--yellow);
+  background: var(--blue);
   box-shadow: 3px 3px 0 var(--ink);
   cursor: pointer;
   font-weight: 700;
   font-size: 13px;
   transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
-  color: var(--ink);
+  color: #fff;
 }
 
 .btn-primary:hover {
@@ -588,7 +589,7 @@ select.field-input {
 .metric-card.blue { background: var(--action-wash); }
 .metric-card.green { background: var(--success-wash); }
 .metric-card.red { background: var(--error-wash); }
-.metric-card.yellow { background: var(--yellow); }
+.metric-card.yellow { background: var(--warning-wash); }
 
 /* Animations (shared) */
 @keyframes rise-in {
@@ -654,6 +655,18 @@ select.field-input {
   min-width: 300px;
 }
 
+.expense-building-filter {
+  flex: 1 1 360px;
+  min-width: 300px;
+}
+
+.expense-building-grid {
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: repeat(4, minmax(64px, 1fr));
+  margin-bottom: 0;
+}
+
 .building-card {
   padding: 16px 10px;
   text-align: center;
@@ -664,6 +677,23 @@ select.field-input {
   transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
   color: var(--ink);
   font-family: inherit;
+}
+
+@media (max-width: 560px) {
+  .expense-building-filter {
+    flex-basis: 100%;
+    min-width: 0;
+  }
+
+  .expense-building-grid {
+    grid-template-columns: repeat(4, minmax(64px, 1fr));
+  }
+}
+
+@media (max-width: 390px) {
+  .expense-building-grid {
+    grid-template-columns: repeat(3, minmax(64px, 1fr));
+  }
 }
 
 .building-card:hover {
@@ -882,7 +912,7 @@ select.field-input {
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  background: var(--yellow);
+  background: var(--white);
 }
 
 .drawer-content {
@@ -890,6 +920,7 @@ select.field-input {
   flex: 1;
   overflow-y: auto;
   overscroll-behavior: contain;
+  animation: more-menu-in 160ms var(--ease-out-expo) both;
 }
 
 .profile-back-button {
@@ -950,7 +981,7 @@ select.field-input {
 }
 
 .resident-profile-action:hover {
-  background: var(--yellow);
+  background: var(--action-wash);
 }
 
 .tenant-profile-section {
@@ -1311,7 +1342,7 @@ button:disabled {
 
 /* Changed financial figures flash once, then settle. */
 @keyframes value-flash {
-  from { background: var(--yellow); }
+  from { background: var(--action-wash); }
   to { background: transparent; }
 }
 
@@ -1353,8 +1384,8 @@ button:disabled {
   to { opacity: 0; transform: translateY(8px) scale(0.98); }
 }
 
-.modal-overlay.closing { animation: overlay-out var(--dur-fast) var(--ease) forwards; }
-.modal-box.closing { animation: box-out var(--dur-fast) var(--ease) forwards; }
+.modal-overlay.closing { animation: overlay-out 180ms var(--ease) forwards; }
+.modal-box.closing { animation: box-out 180ms var(--ease) forwards; }
 
 @media (prefers-reduced-motion: reduce) {
   .modal-overlay.closing,
@@ -1439,8 +1470,8 @@ button:disabled {
   }
 }
 
-.drawer.closing { animation: drawer-out-right var(--dur-normal) var(--ease) forwards; }
-.drawer-backdrop.closing { animation: overlay-out var(--dur-normal) var(--ease) forwards; }
+.drawer.closing { animation: drawer-out-right 180ms var(--ease) forwards; }
+.drawer-backdrop.closing { animation: overlay-out 180ms var(--ease) forwards; }
 
 /* On narrow screens the drawer enters from the bottom, so it must exit the same
    way rather than sideways. */
@@ -1621,7 +1652,7 @@ button:disabled {
   width: 14px;
   height: 14px;
   border: 2px solid var(--ink);
-  background: var(--champagne-gold);
+  background: var(--electric-blue);
   animation: busy-pulse var(--dur-normal) var(--ease) infinite alternate;
 }
 
@@ -2435,7 +2466,7 @@ button:disabled {
      a gold underline, on the navy surface. */
   .mobile-tab.is-active {
     background: transparent;
-    color: var(--champagne-gold, #c9a86a);
+    color: var(--ice-blue);
     border-color: transparent;
     box-shadow: none;
     text-decoration: underline;
@@ -2484,8 +2515,9 @@ button:disabled {
   }
 
   .more-menu button.is-active {
-    background: var(--yellow);
+    background: var(--blue);
     border-color: var(--ink);
+    color: #fff;
   }
 
   .more-menu hr {
@@ -2497,6 +2529,11 @@ button:disabled {
   .more-menu .more-logout {
     color: var(--error-ink);
   }
+}
+
+@keyframes more-menu-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* Entrance + motion parity for the new dashboard elements. */

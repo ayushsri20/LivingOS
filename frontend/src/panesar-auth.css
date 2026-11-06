@@ -63,6 +63,11 @@
    ============================================================ */
 
 .panesar-landing {
+  --primary-text: var(--paper);
+  --muted-text: #B7B0A4;
+  --glass-blue: #60A5FA;
+  --deep-blue: #1D4ED8;
+  --default-border: rgba(245, 240, 232, 0.34);
   position: relative;
   min-height: 100vh;
   min-height: 100dvh;
@@ -71,8 +76,8 @@
   overflow: hidden;
   background:
     radial-gradient(circle at 50% 38%, rgba(37, 99, 235, 0.055), transparent 44%),
-    var(--warm-ivory);
-  color: var(--panesar-black);
+    var(--panesar-black);
+  color: var(--primary-text);
 }
 
 /* Architectural grid — fades toward the foot of the page. */
@@ -124,7 +129,7 @@
 }
 
 .panesar-landing .pl-wordmark .gold {
-  color: var(--deep-gold);
+  color: var(--brand-gold);
 }
 
 .panesar-landing .pl-topmeta {
@@ -145,7 +150,7 @@
   font-weight: 700;
   letter-spacing: 0.3em;
   text-transform: uppercase;
-  color: rgba(119, 113, 104, 0.8);
+  color: var(--muted-text);
   writing-mode: vertical-rl;
   animation: pl-fade 0.4s var(--ease) 1.35s both;
 }
@@ -213,7 +218,7 @@
   font-weight: 700;
   line-height: 1.02;
   letter-spacing: 0.045em;
-  color: var(--panesar-black);
+  color: var(--primary-text);
 }
 
 .panesar-landing .pl-title .pl-word {
@@ -226,7 +231,7 @@
 
 .panesar-landing .pl-title .w-living {
   font-weight: 400;
-  color: var(--deep-gold);
+  color: var(--glass-blue);
   animation: pl-word 0.45s var(--ease-out-expo) 0.7s both;
 }
 
@@ -246,7 +251,7 @@
   width: clamp(64px, 8vw, 96px);
   height: 2px;
   margin-top: 16px;
-  background: var(--champagne-gold);
+  background: var(--glass-blue);
   transform-origin: center;
   animation: pl-draw 0.42s var(--ease) 1.08s both;
 }
@@ -269,14 +274,14 @@
   min-height: 54px;
   margin-top: clamp(26px, 4.5vh, 38px);
   padding: 0 26px;
-  border: 2px solid var(--panesar-black);
+  border: 2px solid var(--default-border);
   background: var(--panesar-black);
-  color: var(--pure-surface);
+  color: var(--primary-text);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  box-shadow: 5px 5px 0 var(--champagne-gold);
+  box-shadow: 5px 5px 0 var(--glass-blue);
   transition:
     transform 0.17s var(--ease),
     box-shadow 0.17s var(--ease),
@@ -286,12 +291,12 @@
 
 .panesar-landing .pl-enter:hover {
   transform: translate(-2px, -2px);
-  box-shadow: 7px 7px 0 var(--champagne-gold);
+  box-shadow: 7px 7px 0 var(--glass-blue);
 }
 
 .panesar-landing .pl-enter:active {
   transform: translate(2px, 2px);
-  box-shadow: 1px 1px 0 var(--deep-gold);
+  box-shadow: 1px 1px 0 var(--glass-blue);
 }
 
 .panesar-landing .pl-enter .arrow {
@@ -311,7 +316,7 @@
   font-weight: 700;
   letter-spacing: 0.3em;
   text-transform: uppercase;
-  color: rgba(119, 113, 104, 0.85);
+  color: var(--muted-text);
   animation: pl-fade 0.4s var(--ease) 1.4s both;
 }
 
@@ -320,6 +325,11 @@
    ============================================================ */
 
 .panesar-login {
+  --primary-text: var(--paper);
+  --muted-text: #B7B0A4;
+  --glass-blue: #60A5FA;
+  --deep-blue: #1D4ED8;
+  --default-border: rgba(245, 240, 232, 0.34);
   position: relative;
   min-height: 100vh;
   min-height: 100dvh;
@@ -338,7 +348,7 @@
     radial-gradient(circle at 16% 86%, rgba(37, 99, 235, 0.16), transparent 44%),
     radial-gradient(circle at 84% 8%, rgba(201, 168, 106, 0.13), transparent 42%),
     var(--panesar-black);
-  color: var(--pure-surface);
+  color: var(--primary-text);
 }
 
 /* Blueprint grid over the dark world. */
@@ -456,7 +466,7 @@
 
 .panesar-brand .plb-title .gold {
   font-weight: 400;
-  color: var(--champagne-gold);
+  color: var(--brand-gold);
 }
 
 .panesar-brand .plb-kicker {
@@ -465,7 +475,7 @@
   font-weight: 700;
   letter-spacing: 0.34em;
   text-transform: uppercase;
-  color: var(--champagne-gold);
+  color: var(--glass-blue);
   animation: pl-rise 0.42s var(--ease) 0.62s both;
 }
 
@@ -473,7 +483,7 @@
   width: 72px;
   height: 3px;
   margin-top: 18px;
-  background: var(--champagne-gold);
+  background: var(--glass-blue);
   transform-origin: center;
   animation: pl-draw 0.44s var(--ease) 0.74s both;
 }
@@ -483,7 +493,7 @@
   margin: 20px 0 0;
   font-size: 13px;
   line-height: 1.7;
-  color: rgba(245, 240, 232, 0.66);
+  color: rgba(245, 240, 232, 0.78);
   animation: pl-rise 0.45s var(--ease) 0.86s both;
 }
 
@@ -506,7 +516,7 @@
   align-items: center;
   justify-content: center;
   padding: clamp(36px, 5vw, 64px) clamp(26px, 5vw, 72px);
-  background: var(--warm-ivory);
+  background: var(--panesar-black);
 }
 
 /* Faint blueprint echo so both worlds read as one system. */
@@ -532,7 +542,7 @@
   font-weight: 700;
   letter-spacing: 0.26em;
   text-transform: uppercase;
-  color: rgba(15, 23, 42, 0.38);
+  color: var(--muted-text);
   animation: pl-fade 0.4s var(--ease) 0.6s both;
 }
 
@@ -542,8 +552,8 @@
   z-index: 2;
   width: min(462px, 100%);
   padding: clamp(30px, 3.4vw, 42px);
-  background: var(--pure-surface);
-  border: 2px solid var(--panesar-black);
+  background: #16203a;
+  border: 2px solid var(--default-border);
   box-shadow: 10px 10px 0 var(--panesar-black);
   animation: pl-card-in 0.55s var(--ease-out-expo) 0.15s both;
 }
@@ -561,15 +571,15 @@
 .panesar-login-card::before {
   left: -2px;
   top: -2px;
-  border-left: 2px solid var(--action-blue);
-  border-top: 2px solid var(--action-blue);
+  border-left: 2px solid var(--glass-blue);
+  border-top: 2px solid var(--glass-blue);
 }
 
 .panesar-login-card::after {
   right: -2px;
   bottom: -2px;
-  border-right: 2px solid var(--action-blue);
-  border-bottom: 2px solid var(--action-blue);
+  border-right: 2px solid var(--glass-blue);
+  border-bottom: 2px solid var(--glass-blue);
 }
 
 .panesar-login-card .pl-heading {
@@ -578,11 +588,11 @@
   font-weight: 700;
   line-height: 1.02;
   letter-spacing: -0.04em;
-  color: var(--panesar-black);
+  color: var(--primary-text);
 }
 
 .panesar-login-card .pl-heading .blue {
-  color: var(--action-blue);
+  color: var(--glass-blue);
 }
 
 .panesar-login-card .pl-lede {
@@ -605,8 +615,8 @@
 .panesar-login-card .pl-retry {
   width: 100%;
   margin-top: 16px;
-  background: var(--pure-surface);
-  color: var(--panesar-black);
+  background: #16203a;
+  color: var(--primary-text);
 }
 
 .panesar-login-card .pl-form {
@@ -632,10 +642,10 @@
   width: 100%;
   min-height: 50px;
   padding: 12px 14px;
-  border: 2px solid var(--panesar-black);
+  border: 2px solid var(--default-border);
   border-radius: 0;
-  background: #ffffff;
-  color: var(--panesar-black);
+  background: #16203a;
+  color: var(--primary-text);
   font-size: 14px;
   transition:
     border-color 0.18s var(--ease),
@@ -643,7 +653,7 @@
 }
 
 .panesar-login-card .pl-input::placeholder {
-  color: #9ca3af;
+  color: #A5B1C4;
   font-weight: 400;
 }
 
@@ -655,7 +665,7 @@
 .panesar-login-card .pl-input:focus,
 .panesar-login-card .pl-input:focus-visible {
   outline: none;
-  border-color: var(--action-blue);
+  border-color: var(--glass-blue);
   box-shadow:
     0 0 0 3px rgba(37, 99, 235, 0.18),
     4px 4px 0 rgba(37, 99, 235, 0.24);
@@ -669,9 +679,9 @@
 .panesar-login-card .pl-submit {
   min-height: 54px;
   margin-top: 6px;
-  border: 2px solid var(--panesar-black);
-  background: var(--action-blue);
-  color: #ffffff;
+  border: 2px solid var(--default-border);
+  background: var(--electric-blue);
+  color: #F3F6FC;
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.05em;
@@ -683,7 +693,7 @@
 }
 
 .panesar-login-card .pl-submit:hover:not(:disabled) {
-  background: var(--action-ink);
+  background: var(--deep-blue);
   transform: translate(-2px, -2px);
   box-shadow: 7px 7px 0 var(--panesar-black);
 }
@@ -830,7 +840,5 @@
     transition-duration: 0.01ms !important;
   }
 }
-
-
 
 

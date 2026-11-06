@@ -18,14 +18,22 @@ fi
 
 echo ""
 echo "========================================="
-echo "Running Database Migrations"
+echo "Running Database Migrations (opt-in)"
 echo "========================================="
-python3 manage.py migrate --noinput --verbosity 2
-if [ $? -ne 0 ]; then
-    echo "ERROR: Migrations failed!"
-    exit 1
+# Migrations are NOT run automatically on start. Against a production database
+# this must be a deliberate step, so it is opt-in:
+#   RUN_MIGRATIONS=true ./start.sh
+# or run `python manage.py migrate` separately from the platform shell.
+if [ "${RUN_MIGRATIONS:-false}" = "true" ]; then
+    python3 manage.py migrate --noinput --verbosity 2
+    if [ $? -ne 0 ]; then
+        echo "ERROR: Migrations failed!"
+        exit 1
+    fi
+    echo "✓ Migrations completed successfully"
+else
+    echo "Skipped (set RUN_MIGRATIONS=true to apply migrations during start)"
 fi
-echo "✓ Migrations completed successfully"
 
 echo ""
 echo "========================================="

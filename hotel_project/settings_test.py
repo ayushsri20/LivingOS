@@ -54,6 +54,10 @@ ENVIRONMENT = "test"
 # rental/tests.py does.
 TESTING = False
 
+# Disable HTTPS redirect in test environment so HTTP test requests are not
+# redirected to HTTPS with 301 Moved Permanently.
+SECURE_SSL_REDIRECT = False
+
 # Absolute, explicit and deliberately *not* db.sqlite3.
 TEST_DATABASE_PATH = Path(BASE_DIR) / "test_db.sqlite3"
 

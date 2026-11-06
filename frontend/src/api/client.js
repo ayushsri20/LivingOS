@@ -37,6 +37,9 @@ export async function fetchCsrfToken() {
   }
 
   // Cross-origin case: the cookie is on the API's domain, so ask for the token.
+  // The local cookie path above is deliberately checked first because it needs
+  // no configured API origin.
+  assertApiBaseConfigured()
   let response
   try {
     response = await fetch(`${API_BASE}/api/csrf/`, {
@@ -50,14 +53,14 @@ export async function fetchCsrfToken() {
     // :8000, which the proxy reports as a 502 Bad Gateway. Surface that
     // explicitly so the message points at the real cause instead of CSRF.
     throw new Error(
-      'Cannot reach the backend (Bad Gateway). Make sure the Django server is running on port 8000.',
+      'Cannot reach the backend (Bad Gateway). Make sure the Django server is running on port 8001.',
     )
   }
   if (response.status === 502 || response.status === 503 || response.status === 504) {
     // A gateway error means the proxy reached nothing upstream — a backend
     // outage, not a CSRF problem. Give the actionable reason.
     throw new Error(
-      'Backend unavailable (502 Bad Gateway). Start the Django server on port 8000 and reload.',
+      'Backend unavailable (502 Bad Gateway). Start the Django server on port 8001 and reload.',
     )
   }
   if (!response.ok) {
@@ -100,7 +103,30 @@ function extractMessage(payload, status) {
   return `Request failed with HTTP ${status}.`
 }
 
+// The Vite dev server proxies /api to the backend, so a missing VITE_API_BASE_URL
+// is safe in local development. In a production build, an empty API base URL would
+// make the SPA call its OWN origin for /api — which cannot reach Django. Fail fast
+// with a clear configuration error instead of silently targeting the frontend
+// origin. Uses the build environment (import.meta.env.PROD) rather than hostname
+// patterns, which also fire incorrectly on ngrok/preview origins.
+//
+// Deliberately a runtime helper, not a module-level throw: module scope runs at
+// import time, which would crash the whole app (and break tests) before any UI
+// or error boundary can render. Whitespace-only counts as missing; the value
+// itself is never echoed, so no secret can leak through this message.
+function assertApiBaseConfigured() {
+  if (import.meta.env.PROD && !API_BASE.trim()) {
+    throw new Error(
+      'PANESAR LIVING frontend is misconfigured: VITE_API_BASE_URL is not set. ' +
+      'In production this must point at the deployed Render API URL (e.g. ' +
+      'https://<app>.onrender.com), and it is not safe to fall back to the ' +
+      "page's own origin. Set it in the Vercel project environment and redeploy."
+    )
+  }
+}
+
 export async function apiFetch(path, options = {}) {
+  assertApiBaseConfigured()
   const { headers: callerHeaders, body, ...rest } = options
   const isFormData = body instanceof FormData
   const method = String(rest.method || 'GET').toUpperCase()
@@ -177,6 +203,7 @@ export function buildLoginRequestBody({ username, password }) {
 }
 
 export async function login({ username, password }) {
+  assertApiBaseConfigured()
   // Get a CSRF token first. Locally this still comes from the cookie; when the
   // app and API are on different origins it comes from GET /api/csrf/.
   const token = await fetchCsrfToken()
@@ -205,6 +232,7 @@ export async function login({ username, password }) {
 }
 
 export async function logout() {
+  assertApiBaseConfigured()
   await fetch(`${API_BASE}/logout/`, {
     method: 'GET',
     credentials: 'include',

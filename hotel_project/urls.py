@@ -18,6 +18,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.views.static import serve as static_serve
 from rental import views
 
 urlpatterns = [
@@ -28,4 +29,16 @@ urlpatterns = [
 # Serve static and media files in development
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    # Identity-document guard (DEBUG dev server only): route the two private
+    # prefixes to an auth-walled view BEFORE the generic static() media route.
+    # Anonymous probes get the login redirect (or 404 for unknown files) and
+    # never bytes; all other media keeps the pre-existing public behaviour.
+    urlpatterns += [
+        path(
+            'media/<path:path>',
+            views.guarded_identity_media_serve,
+            {'document_root': settings.MEDIA_ROOT},
+            name='guarded_identity_media',
+        ),
+    ]
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

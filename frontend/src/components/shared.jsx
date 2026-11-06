@@ -44,6 +44,9 @@ export function TopBar({ showNav = true, currentView, onViewChange }) {
     setLoggingOut(true)
     try {
       await logout()
+      // Let mounted identity-document previews revoke blob URLs and drop
+      // sensitive state before the page navigates away.
+      try { window.dispatchEvent(new Event('panesar:logout')) } catch { /* noop */ }
       window.location.href = '/'
     } catch {
       // Never strand the user on a dead button: allow another attempt.
@@ -211,7 +214,51 @@ export function Toast({ message, type = 'success', onClose }) {
   )
 }
 
-export function LoadingShell({ label = 'Loading…' }) {
+/**
+ * Page-level loading indicator. The default rendering is a restrained label
+ * with the shared busy pulse; the `rooms` variant additionally shows building
+ * and room-card skeletons that match the real directory layout so the user
+ * can see shape, not just text, while the first payload lands.
+ *
+ * Only used for genuine initial loads — background refreshes keep the last
+ * good directory on screen with a compact "Refreshing…" indicator instead.
+ */
+export function LoadingShell({ label = 'Loading…', variant = 'default' }) {
+  if (variant === 'rooms') {
+    return (
+      <div className="loading-shell loading-shell--rooms" role="status" aria-label={label} aria-busy="true">
+        <span className="loading-label">{label}</span>
+        <div className="skeleton-building-grid" aria-hidden="true">
+          {Array.from({ length: 6 }, (_, index) => (
+            <div key={index} className="skeleton-building">
+              <div className="skeleton-line skeleton-line--name" />
+              <div className="skeleton-line skeleton-line--number" />
+              <div className="skeleton-line skeleton-line--count" />
+            </div>
+          ))}
+        </div>
+        <div className="skeleton-room-grid" aria-hidden="true">
+          {Array.from({ length: 6 }, (_, index) => (
+            <div key={index} className="skeleton-room">
+              <div className="skeleton-row">
+                <div className="skeleton-line skeleton-line--short" />
+                <div className="skeleton-line skeleton-line--status" />
+              </div>
+              <div className="skeleton-line skeleton-line--room" />
+              <div className="skeleton-line skeleton-line--occupancy" />
+              <div className="skeleton-meta">
+                <div className="skeleton-line skeleton-line--short" />
+                <div className="skeleton-line skeleton-line--short" />
+                <div className="skeleton-line skeleton-line--short" />
+                <div className="skeleton-line skeleton-line--short" />
+                <div className="skeleton-line skeleton-line--short" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
   return <div className="loading-shell" role="status">{label}</div>
 }
 
@@ -233,6 +280,10 @@ export function Modal({ title, onClose, children, footer }) {
   const requestClose = useCallback(() => {
     if (!onClose || closing || closedRef.current) return
     closedRef.current = true
+    const previousFocus = previousFocusRef.current
+    if (previousFocus instanceof HTMLElement && previousFocus.isConnected) {
+      previousFocus.focus()
+    }
     setClosing(true)
     closeTimer.current = setTimeout(onClose, 180)
   }, [onClose, closing])

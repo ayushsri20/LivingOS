@@ -8,6 +8,7 @@ import { TopBar, LoadingShell, Toast, MetricCard, EmptyState, Modal, FieldGroup 
 import { AuthProvider, useAuth } from './context/AuthContext'
 
 const RoomDrawer = lazy(() => import('./components/RoomDrawer'))
+const IdentityDocuments = lazy(() => import('./components/IdentityDocuments'))
 const AssignResidentModal = lazy(() => import('./components/AssignResident'))
 
 /**
@@ -135,7 +136,7 @@ function StatRow({ label, value, tone }) {
   )
 }
 
-function RoomsView({ rooms, buildings, selectedBuilding: selectedBuildingProp = '', onBuildingChange, loading, error, onOpenRoom, onRetry, onRefresh, onToast, onResidentsChanged }) {
+function RoomsView({ rooms, buildings, selectedBuilding: selectedBuildingProp = '', onBuildingChange, loading, refreshing, error, refreshError, onOpenRoom, onRetry, onRefreshRetry, onRefresh, onToast, onResidentsChanged }) {
   const [internalBuilding, setInternalBuilding] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [occupancyMap, setOccupancyMap] = useState({})
@@ -151,14 +152,15 @@ function RoomsView({ rooms, buildings, selectedBuilding: selectedBuildingProp = 
 
   // Derived rather than stored in state, so no effect is needed to pick a default
   // once the buildings arrive from the backend (which already orders M1,1..5).
-  const activeBuilding = selectedBuilding || buildings[0]?.name || ''
+  // '' (ALL) means every building: null skips the building filter below.
+  const activeBuilding = selectedBuilding === '' ? null : selectedBuilding || buildings[0]?.name || ''
   const query = searchQuery.trim().toLowerCase()
 
   // Occupancy comes from the authoritative per-room tenants endpoint — it is
   // never inferred from the snapshot's single `resident` field. Only the rooms
   // of the active building are fetched, and a superseded run is discarded.
   useEffect(() => {
-    const targets = rooms.filter((room) => room.building === activeBuilding)
+    const targets = activeBuilding ? rooms.filter((room) => room.building === activeBuilding) : rooms
     let cancelled = false
     Promise.allSettled(targets.map((room) => apiFetch(`/api/room/${room.id}/tenants/`)))
       .then((results) => {
@@ -175,14 +177,16 @@ function RoomsView({ rooms, buildings, selectedBuilding: selectedBuildingProp = 
   }, [rooms, activeBuilding])
 
   const visibleRooms = rooms.filter((room) => {
-    if (room.building !== activeBuilding) return false
+    if (activeBuilding && room.building !== activeBuilding) return false
     if (!query) return true
     return `${getRoomNumber(room)} ${room.resident || ''}`.toLowerCase().includes(query)
   })
 
-  if (loading) return <LoadingShell label="Loading rooms…" />
+  // Genuine initial load: branded skeletons that match the directory layout.
+  if (loading) return <LoadingShell label="Loading rooms…" variant="rooms" />
 
-  if (error) {
+  // A failed initial load is a real error, not an empty directory.
+  if (error && !refreshing) {
     return (
       <div className="surface">
         <div className="section-head" style={{ marginTop: 0 }}>
@@ -199,7 +203,32 @@ function RoomsView({ rooms, buildings, selectedBuilding: selectedBuildingProp = 
 
   return (
     <div>
-      <div className="building-grid">
+      {refreshing && rooms.length > 0 && (
+        <div style={{ fontSize: 11, color: 'var(--secondary-text)', marginBottom: 8 }}>
+          Refreshing…
+        </div>
+      )}
+      {refreshError && (
+        <div className="surface" style={{ marginBottom: 16 }}>
+          <div className="error-state" style={{ padding: '10px 14px', fontSize: 12, display: 'flex', gap: 10, alignItems: 'center' }}>
+            <span>Showing the last loaded directory — {refreshError}</span>
+            <button type="button" className="retry-button" style={{ minHeight: 32, padding: '4px 10px', fontSize: 11 }} onClick={onRefreshRetry}>
+              Retry
+            </button>
+          </div>
+        </div>
+      )}
+      <div className="building-grid rooms-building-grid">
+        <button
+          type="button"
+          className={`building-card ${selectedBuilding === '' ? 'active' : ''}`}
+          aria-pressed={selectedBuilding === ''}
+          onClick={() => setSelectedBuilding('')}
+        >
+          <div className="rooms-building-label">BUILDING</div>
+          <div className="rooms-building-name">ALL</div>
+          <div className="rooms-building-count">{rooms.length} rooms</div>
+        </button>
         {buildings.map((building) => (
           <button
             key={building.name}
@@ -208,9 +237,9 @@ function RoomsView({ rooms, buildings, selectedBuilding: selectedBuildingProp = 
             aria-pressed={activeBuilding === building.name}
             onClick={() => setSelectedBuilding(building.name)}
           >
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.05em', marginBottom: 4 }}>BUILDING</div>
-            <div style={{ fontSize: 24, fontFamily: 'var(--font-display)', fontWeight: 700 }}>{building.name}</div>
-            <div style={{ fontSize: 11, fontWeight: 700, marginTop: 4 }}>{building.rooms?.length ?? 0} rooms</div>
+            <div className="rooms-building-label">BUILDING</div>
+            <div className="rooms-building-name">{building.name}</div>
+            <div className="rooms-building-count">{building.rooms?.length ?? 0} rooms</div>
           </button>
         ))}
       </div>
@@ -229,7 +258,17 @@ function RoomsView({ rooms, buildings, selectedBuilding: selectedBuildingProp = 
       </div>
 
       {visibleRooms.length === 0 ? (
-        <EmptyState message={`No rooms in Building ${activeBuilding} match your search.`} />
+        <EmptyState
+          message={
+            buildings.length === 0
+              ? 'No buildings are available.'
+              : query
+              ? `No rooms match your search.`
+              : activeBuilding
+              ? `No rooms in Building ${activeBuilding}.`
+              : 'No rooms across all buildings.'
+          }
+        />
       ) : (
         <div className="room-grid">
           {visibleRooms.map((room) => {
@@ -249,7 +288,7 @@ function RoomsView({ rooms, buildings, selectedBuilding: selectedBuildingProp = 
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 12 }}>
                   <div>
-                    <span className="eyebrow" style={{ color: '#5c564c', fontSize: 10 }}>BUILDING {room.building}</span>
+                    <span className="eyebrow" style={{ color: 'var(--secondary-text)', fontSize: 10 }}>BUILDING {room.building}</span>
                     <h3 style={{ margin: '2px 0 0', fontFamily: 'var(--font-display)', fontSize: 28, letterSpacing: '-0.04em' }}>
                       {getRoomNumber(room)}
                     </h3>
@@ -258,7 +297,7 @@ function RoomsView({ rooms, buildings, selectedBuilding: selectedBuildingProp = 
                 </div>
 
                 <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 14 }}>
-                  {occupied ? room.resident : <span style={{ color: '#9d968a' }}>Vacant Room</span>}
+                  {occupied ? room.resident : <span style={{ color: 'var(--secondary-text)' }}>Vacant Room</span>}
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, borderTop: '2px dashed var(--ink)', paddingTop: 12 }}>
@@ -398,13 +437,6 @@ function TenantProfile({ guest, room, onBack }) {
   const roomDetails = profileData?.room
   const gender = resident.gender || guest.gender || ''
   const genderLabel = { M: 'Male', F: 'Female', O: 'Other' }[gender] || gender || '—'
-  const documents = [
-    ['Government ID photo', resident.govt_id_photo, true],
-    ['Aadhaar front', resident.aadhar_front, Boolean(profileData?.resident)],
-    ['Aadhaar back', resident.aadhar_back, Boolean(profileData?.resident)],
-    ['College ID photo', resident.college_id_photo, true],
-    ['Document verification image', resident.document_verification_image, Boolean(profileData?.resident)],
-  ]
 
   return (
     <div className="tenant-profile">
@@ -448,20 +480,20 @@ function TenantProfile({ guest, room, onBack }) {
       </section>
 
       <section className="surface tenant-profile-section">
-        <div className="section-head" style={{ marginTop: 0 }}><h2>Identity Documents</h2></div>
+        <div className="section-head" style={{ marginTop: 0 }}><h2>Identity Documents</h2><span>Protected</span></div>
         <div className="tenant-profile-grid">
           <div><span className="eyebrow">ID type</span><strong>{guest.id_type || '—'}</strong></div>
-          <div><span className="eyebrow">ID number</span><strong>{guest.id_number || '—'}</strong></div>
           <div><span className="eyebrow">College / student ID</span><strong>{resident.college_id || guest.college_id || '—'}</strong></div>
           <div><span className="eyebrow">College</span><strong>{guest.student_college || '—'}</strong></div>
-          {documents.map(([label, path, known]) => (
-            <div key={label}>
-              <span className="eyebrow">{label}</span>
-              <strong>{!known ? 'Not available from this API' : path ? 'On file' : 'Not on file'}</strong>
-            </div>
-          ))}
         </div>
-        <p className="tenant-profile-note">Document images are not displayed in this profile.</p>
+        <Suspense fallback={<LoadingShell label="Loading identity documents…" />}>
+          <IdentityDocuments
+            guestId={guest.id}
+            initialStatus={resident.identity_documents || {}}
+            initialUrls={resident.identity_document_urls || {}}
+          />
+        </Suspense>
+        <p className="tenant-profile-note">Images stream over an authenticated session. No public links are shown.</p>
       </section>
 
       <section className="surface tenant-profile-section">
@@ -714,7 +746,7 @@ function ResidentsView({ rooms, buildings, syncToken = 0 }) {
               <>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 12 }}>
                   <div>
-                    <span className="eyebrow" style={{ color: '#5c564c', fontSize: 10 }}>
+                    <span className="eyebrow" style={{ color: 'var(--secondary-text)', fontSize: 10 }}>
                       {snapshot ? `BUILDING ${snapshot.building}` : 'NO ROOM ASSIGNED'}
                     </span>
                     <h3 style={{ margin: '2px 0 0', fontFamily: 'var(--font-display)', fontSize: 28, letterSpacing: '-0.04em' }}>
@@ -858,8 +890,8 @@ function PulseRow({ label, value, tone, note, flash, dial, breakdown }) {
  * the metrics endpoint reports. The whole card is the control — it reuses the
  * existing dashboard → Rooms building navigation.
  *
- * The photo is a phone-only brand treatment reusing the approved header
- * artwork (`/branding/plh-final.webp`); it carries no data and is hidden from
+ * The photo is a phone-only brand treatment reusing the approved building
+ * imagery; it carries no data and is hidden from
  * assistive tech. Desktop renders the name-led card exactly as before.
  */
 function BuildingObject({ building, rooms, onOpen }) {
@@ -1006,7 +1038,7 @@ function DashboardView({ syncToken = 0, onOpenBuilding }) {
         </div>
         <div className="error-state">
           <span>{error}</span>
-          <p style={{ margin: 0, fontSize: 13, color: '#5c564c' }}>
+          <p style={{ margin: 0, fontSize: 13, color: 'var(--secondary-text)' }}>
             These figures come from the backend metrics API, so nothing is displayed until it responds.
           </p>
           <button type="button" className="retry-button" onClick={retry}>
@@ -1234,7 +1266,15 @@ function ElectricityView({ rooms, buildings, loading, error, onOpenRoom, onRetry
       </div>
 
       {visibleRooms.length === 0 ? (
-        <EmptyState message={`No rooms in Building ${activeBuilding} match your search.`} />
+        <EmptyState
+          message={
+            buildings.length === 0
+              ? 'No buildings are available.'
+              : query
+              ? `No rooms in Building ${activeBuilding} match your search.`
+              : `No rooms in Building ${activeBuilding}.`
+          }
+        />
       ) : (
         <div className="room-grid">
           {visibleRooms.map((room) => (
@@ -1263,7 +1303,7 @@ function ElectricityView({ rooms, buildings, loading, error, onOpenRoom, onRetry
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginTop: 16, paddingTop: 16, borderTop: '2px dashed var(--ink)' }}>
                 <div>
-                  <span className="eyebrow" style={{ display: 'block', fontSize: 10, color: '#5c564c' }}>ELECTRICITY AMOUNT</span>
+                  <span className="eyebrow" style={{ display: 'block', fontSize: 10, color: 'var(--secondary-text)' }}>ELECTRICITY AMOUNT</span>
                   <strong style={{ fontFamily: 'var(--font-display)', fontSize: 24, letterSpacing: '-0.02em' }}>{money(room.electricity_amount)}</strong>
                 </div>
                 <span style={{ padding: '8px 12px', border: '2px solid var(--ink)', background: 'var(--paper)', fontWeight: 700, fontSize: 12 }}>
@@ -1411,22 +1451,22 @@ function PaymentsView({ rooms, buildings, loading, error, onOpenRoom, onRetry, h
     <div className="payments-layout">
       <div className="section-head" style={{ marginTop: 0 }}>
         <div>
-          <span className="eyebrow" style={{ color: '#5c564c' }}>Current month</span>
+          <span className="eyebrow" style={{ color: 'var(--secondary-text)' }}>Current month</span>
           <h2>Collection Summary</h2>
         </div>
         <span>{scopeLabel} · {visibleRooms.length} of {rooms.length} rooms</span>
       </div>
 
       <div className="metrics-grid payments-metrics">
-        <MetricCard label="Expected collection" value={money(summary.expected)} color="yellow" flash={flashExpected} />
-        <MetricCard label="Total collected" value={money(summary.collected)} color="green" flash={flashCollected} />
+        <MetricCard label="Fully paid rooms" value={summary.fullyPaid} color="green" />
         <MetricCard label="Due" value={money(summary.due)} color="red" flash={flashDue} />
-        <MetricCard label="Fully paid rooms" value={summary.fullyPaid} />
+        <MetricCard label="Total collected" value={money(summary.collected)} color="green" flash={flashCollected} />
+        <MetricCard label="Expected collection" value={money(summary.expected)} flash={flashExpected} />
       </div>
 
       <div className="surface" style={{ padding: '14px 16px', marginBottom: 20, display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'flex-end' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <span className="eyebrow" style={{ color: '#5c564c' }}>BUILDING</span>
+          <span className="eyebrow" style={{ color: 'var(--secondary-text)' }}>BUILDING</span>
           <div className="building-grid" style={{ gap: 8 }}>
             <button
               type="button"
@@ -1453,7 +1493,7 @@ function PaymentsView({ rooms, buildings, loading, error, onOpenRoom, onRetry, h
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <span className="eyebrow" style={{ color: '#5c564c' }}>PAYMENT STATUS</span>
+          <span className="eyebrow" style={{ color: 'var(--secondary-text)' }}>PAYMENT STATUS</span>
           <div className="building-grid" style={{ gap: 8 }}>
             {PAYMENT_STATUS_FILTERS.map((status) => (
               <button
@@ -1471,7 +1511,7 @@ function PaymentsView({ rooms, buildings, loading, error, onOpenRoom, onRetry, h
         </div>
 
         <div style={{ flex: 1, minWidth: 220, display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <label className="eyebrow" htmlFor="payments-search" style={{ color: '#5c564c' }}>SEARCH</label>
+          <label className="eyebrow" htmlFor="payments-search" style={{ color: 'var(--secondary-text)' }}>SEARCH</label>
           <input
             id="payments-search"
             type="search"
@@ -1487,7 +1527,7 @@ function PaymentsView({ rooms, buildings, loading, error, onOpenRoom, onRetry, h
       <div className="surface payments-ledger">
         <div className="section-head" style={{ marginTop: 0 }}>
           <div>
-            <span className="eyebrow" style={{ color: '#5c564c' }}>Current room bills</span>
+            <span className="eyebrow" style={{ color: 'var(--secondary-text)' }}>Current room bills</span>
             <h2>Payment Ledger</h2>
           </div>
           <span>{visibleRooms.length} rooms</span>
@@ -1766,7 +1806,7 @@ function ExpenseFilters({ month, building, buildings, onMonthChange, onBuildingC
   return (
     <div className="surface" style={{ padding: '14px 16px', marginBottom: 20, display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'flex-end' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        <label className="eyebrow" htmlFor="expenses-month" style={{ color: '#5c564c' }}>MONTH</label>
+        <label className="eyebrow" htmlFor="expenses-month" style={{ color: 'var(--secondary-text)' }}>MONTH</label>
         <input
           id="expenses-month"
           type="month"
@@ -1777,9 +1817,9 @@ function ExpenseFilters({ month, building, buildings, onMonthChange, onBuildingC
         />
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        <span className="eyebrow" style={{ color: '#5c564c' }}>BUILDING</span>
-        <div className="building-grid" style={{ gap: 8 }}>
+      <div className="expense-building-filter" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span className="eyebrow" style={{ color: 'var(--secondary-text)' }}>BUILDING</span>
+        <div className="building-grid expense-building-grid" style={{ gap: 8 }}>
           <button type="button" className={`building-card ${building === '' ? 'active' : ''}`} aria-pressed={building === ''} onClick={() => onBuildingChange('')} style={{ minWidth: 64, padding: '8px 12px' }}>ALL</button>
           {buildings.map((name) => (
             <button key={name} type="button" className={`building-card ${building === name ? 'active' : ''}`} aria-pressed={building === name} onClick={() => onBuildingChange(name)} style={{ minWidth: 64, padding: '8px 12px' }}>{name}</button>
@@ -1931,7 +1971,7 @@ function AnalyticsView() {
         </div>
         <div className="error-state">
           <span>{error}</span>
-          <p style={{ margin: 0, fontSize: 13, color: '#5c564c' }}>
+          <p style={{ margin: 0, fontSize: 13, color: 'var(--secondary-text)' }}>
             These figures come from the backend metrics API, so nothing is displayed until it responds.
           </p>
           <button type="button" className="retry-button" onClick={retry}>Retry</button>
@@ -1994,7 +2034,7 @@ function AnalyticsView() {
             <h2>Reporting Scope</h2>
             <span>Metric API</span>
           </div>
-          <p style={{ margin: 0, fontSize: 13, color: '#5c564c' }}>
+          <p style={{ margin: 0, fontSize: 13, color: 'var(--secondary-text)' }}>
             Current month only. Monthly and yearly figures are in the report below.
           </p>
         </div>
@@ -2064,11 +2104,11 @@ function FinancialReport() {
 
       <div className="surface" style={{ padding: '14px 16px', marginBottom: 20, display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'flex-end' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <label className="eyebrow" htmlFor="report-month" style={{ color: '#5c564c' }}>MONTH</label>
+          <label className="eyebrow" htmlFor="report-month" style={{ color: 'var(--secondary-text)' }}>MONTH</label>
           <input id="report-month" type="month" className="field-input" value={month.slice(0, 7)} onChange={(event) => setMonth(event.target.value ? `${event.target.value}-01` : '')} style={{ minHeight: 44 }} />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <label className="eyebrow" htmlFor="report-year" style={{ color: '#5c564c' }}>YEAR</label>
+          <label className="eyebrow" htmlFor="report-year" style={{ color: 'var(--secondary-text)' }}>YEAR</label>
           <input id="report-year" type="number" min="1900" max="9999" className="field-input" value={year} onChange={(event) => setYear(event.target.value)} style={{ minHeight: 44, width: 120 }} />
         </div>
         <button type="button" className="ghost-button" style={{ minHeight: 44 }} onClick={retry}>Refresh</button>
@@ -2132,7 +2172,7 @@ function FinancialReport() {
             )}
             {/* Only surfaced when there is a pending amount to act on. */}
             {(monthly?.expenses?.pending_total ?? 0) > 0 && (
-              <p style={{ margin: '14px 0 0', fontSize: 13, color: '#5c564c' }}>
+              <p style={{ margin: '14px 0 0', fontSize: 13, color: 'var(--secondary-text)' }}>
                 {money(monthly.expenses.pending_total)} pending — excluded from net until paid.
               </p>
             )}
@@ -2174,7 +2214,7 @@ function FinancialReport() {
               <h2>Not Available</h2>
               <span>No backing data</span>
             </div>
-            <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, color: '#5c564c' }}>
+            <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, color: 'var(--secondary-text)' }}>
               {(monthly?.unavailable || []).map((item) => (
                 <li key={item.field}><strong>{item.field}</strong> — {item.reason}</li>
               ))}
@@ -2382,7 +2422,9 @@ function LoginShell() {
 }
 
 function MainShell() {
-  const { authState } = useAuth()
+  const { authState, checkAuth } = useAuth()
+  const checkAuthRef = useRef(checkAuth)
+  useEffect(() => { checkAuthRef.current = checkAuth }, [checkAuth])
   const [currentView, setCurrentView] = useState('dashboard')
   // Which unauthenticated screen to show: the brand landing first, then the
   // login card once the visitor asks to enter. Authentication itself (login
@@ -2392,6 +2434,11 @@ function MainShell() {
   const [buildings, setBuildings] = useState([])
   const [roomsLoading, setRoomsLoading] = useState(true)
   const [roomsError, setRoomsError] = useState('')
+  const [roomsRefreshing, setRoomsRefreshing] = useState(false)
+  const [roomsRefreshError, setRoomsRefreshError] = useState('')
+  // Monotonic id so an older, slower rooms response can never overwrite a
+  // newer one (initial load vs. retry vs. background refresh).
+  const roomsRequestId = useRef(0)
   const [selectedRoomId, setSelectedRoomId] = useState(null)
   const [toast, setToast] = useState(null)
   // { roomId, token } emitted after a successful collection, so the payments view
@@ -2421,15 +2468,73 @@ function MainShell() {
     setCurrentView('rooms')
   }, [])
 
-  // Single source of truth for room data. Every view and the drawer read from this,
-  // so one refetch after a mutation refreshes cards, totals and the drawer together.
-  const refreshRooms = useCallback(async () => {
-    const data = await apiFetch('/api/rooms/')
-    setRooms(data.rooms || [])
-    setBuildings(data.buildings || [])
-    setRoomsError('')
-    return data
-  }, [])
+  /**
+   * Single source of truth for room data. Every view and the drawer read from
+   * this, so one refetch after a mutation refreshes cards, totals and the
+   * drawer together.
+   *
+   * A monotonic request id guards every fetch: a slower, older response
+   * (initial load, retry, or background refresh racing with a newer one) is
+   * discarded instead of overwriting fresher results.
+   *
+   * `background` refreshes (triggered by a room or resident mutation) keep the
+   * last good directory on screen and report failure through a compact
+   * indicator — the directory is never cleared merely because a refresh failed.
+   *
+   * 401 / 403 / login-redirect responses are authentication or permission
+   * errors: they hand back to the auth flow instead of masquerading as an
+   * empty room list.
+   */
+  const fetchRooms = useCallback(
+    async ({ background = false } = {}) => {
+      const id = ++roomsRequestId.current
+      if (!background) setRoomsLoading(true)
+      else setRoomsRefreshing(true)
+      try {
+        const data = await apiFetch('/api/rooms/')
+        if (id !== roomsRequestId.current) return
+        if (
+          !data ||
+          data.success !== true ||
+          !Array.isArray(data.rooms) ||
+          !Array.isArray(data.buildings)
+        ) {
+          throw new Error('The room directory returned an unexpected response.')
+        }
+        setRooms(data.rooms)
+        setBuildings(data.buildings)
+        setRoomsError('')
+        setRoomsRefreshError('')
+        return data
+      } catch (err) {
+        if (id !== roomsRequestId.current) return
+        // Authentication required, session expired, or permission denied: not
+        // an empty directory — re-establish auth so the login flow appears.
+        if (
+          err.status === 401 ||
+          err.status === 403 ||
+          /Authentication required/.test(err.message || '')
+        ) {
+          checkAuthRef.current()
+          return
+        }
+        if (background) {
+          setRoomsRefreshError(err.message || 'Unable to refresh the room directory.')
+        } else {
+          setRoomsError(err.message || 'Unable to load rooms.')
+        }
+      } finally {
+        if (id === roomsRequestId.current) {
+          if (!background) setRoomsLoading(false)
+          else setRoomsRefreshing(false)
+        }
+      }
+    },
+    [] // checkAuth is read through a ref so this callback stays stable
+  )
+
+  const refreshRooms = useCallback(() => fetchRooms({ background: true }), [fetchRooms])
+  const retryRooms = useCallback(() => fetchRooms({ background: false }), [fetchRooms])
 
   useEffect(() => {
     // Only load rooms once the session is actually established. Fetching while
@@ -2437,39 +2542,16 @@ function MainShell() {
     // and that rejection would otherwise persist and leave every room-backed
     // view permanently empty even after a successful login.
     if (authState !== 'authenticated') return undefined
-
-    let cancelled = false
-    // Fetched inline (rather than via refreshRooms) so that no setState runs
-    // synchronously inside the effect body.
-    apiFetch('/api/rooms/')
-      .then((data) => {
-        if (cancelled) return
-        setRooms(data.rooms || [])
-        setBuildings(data.buildings || [])
-        setRoomsError('')
-      })
-      .catch((err) => {
-        if (!cancelled) setRoomsError(err.message || 'Unable to load rooms.')
-      })
-      .finally(() => {
-        if (!cancelled) setRoomsLoading(false)
-      })
-    return () => { cancelled = true }
-  }, [authState])
+    fetchRooms({ background: false })
+    // Request-id gating discards stale results, so no cleanup is required.
+    return undefined
+  }, [authState, fetchRooms])
 
   useEffect(() => {
     if (!toast) return undefined
     const timer = setTimeout(() => setToast(null), 4500)
     return () => clearTimeout(timer)
   }, [toast])
-
-  const retryRooms = () => {
-    setRoomsLoading(true)
-    setRoomsError('')
-    refreshRooms()
-      .catch((err) => setRoomsError(err.message || 'Unable to load rooms.'))
-      .finally(() => setRoomsLoading(false))
-  }
 
   const openRoom = (room) => setSelectedRoomId(room.id)
 
@@ -2508,9 +2590,12 @@ function MainShell() {
             selectedBuilding={roomsBuilding}
             onBuildingChange={setRoomsBuilding}
             loading={roomsLoading}
+            refreshing={roomsRefreshing}
             error={roomsError}
+            refreshError={roomsRefreshError}
             onOpenRoom={openRoom}
             onRetry={retryRooms}
+            onRefreshRetry={refreshRooms}
             onRefresh={refreshRooms}
             onToast={setToast}
             onResidentsChanged={handleResidentsChanged}
@@ -2550,7 +2635,7 @@ function MainShell() {
               <h2>{activeView.title} Module</h2>
               <span>Coming next</span>
             </div>
-            <p style={{ fontSize: 14, color: '#5c564c', marginBottom: 20 }}>
+            <p style={{ fontSize: 14, color: 'var(--secondary-text)', marginBottom: 20 }}>
               Content for <strong>{activeView.title}</strong> is scheduled for a later frontend step.
             </p>
           </div>

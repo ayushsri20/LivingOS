@@ -71,8 +71,15 @@ class SecurityHeadersMiddleware(MiddlewareMixin):
             'accelerometer=()'
         )
         
-        # Performance headers
-        response['Cache-Control'] = 'public, max-age=3600'
+        # Performance headers — but NEVER cache private identity images:
+        # guest_identity_file sets private/no-store, and this middleware must
+        # not downgrade it to a public cacheable response. Everything else
+        # keeps the existing behaviour exactly.
+        cache_control = response.get('Cache-Control', '')
+        if 'no-store' in cache_control:
+            pass
+        else:
+            response['Cache-Control'] = 'public, max-age=3600'
         
         # Opt-in to browser features for better performance
         response['Accept-CH'] = 'DPR, Viewport-Width, Width'
